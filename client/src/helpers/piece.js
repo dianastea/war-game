@@ -1,61 +1,64 @@
 import Phaser from 'phaser'; 
 
 export default class Piece extends Phaser.GameObjects.Sprite {
-    constructor(scene, x, y, key, type) {
+    constructor(scene, x, y, key, type, color) {
         super(scene, x, y, key)
         this.scene = scene 
         this.scene.add.existing(this)
-        this.setData('type', type)
+        this.setData({'type': type, 'color': color, 'row': 0, 'col': 0})
+        
+        let texture = type 
+        this.setTexture(texture)
     }
 
-    updatePosition(v, h) {
-        this.setData('boardV', v)
-        this.setData('boardH', h)
-        this.x = 50+h*100
-        this.y = 50+v*100
+    updatePosition(row, col) {
+        this.setData('row', row)
+        this.setData('col', col)
+        this.x = 50+col*100
+        this.y = 50+row*100
     }
 
     possibleMoves() {
         let pm = [] 
-        let h = this.getData('boardH')
-        let v = this.getData('boardV')
+        // BE CAREFUL, NOTHING BELOW WILL WORK BECAUSE it's using h, v not row, col
+        let row = this.getData('row') 
+        let col = this.getData('col')
 
-        // apm (all possible moves) in order of v, h, "n for normal move, a for attacking move"
-        if (this.getData('type') == 'BlackPiece') {
-            var apm = [[0, -1, 'n'], [-2, -2, 'a'], [2, -2, 'a']]
-        }
-        else {
-            var apm = [[0, 1, 'n'], [-2, 2, 'a'], [2, 2, 'a']]
-        }
-
+        let apm = this.moves // NEED TO CREATE 
+        console.log('apm',apm)
         for (let i = 0; i < apm.length; i ++ ) {
-            let curr = apm[i] // movement 
-            let coor = [h+curr[0], v+curr[1], curr[2] == 'a'] // coordinates if piece moved 
+            let move = apm[i]  
+            let ifMoved = [row+move[0], col+move[1], move[2]] // coordinates if piece moved 
             
             // checks that the move is in bounds 
-            if (coor[0] >= 0 && coor[0] < this.scene.board[0].length && coor[1] >= 0 && coor[1] < this.scene.board.length) {
-                
-                let potential = this.scene.board[coor[1]][coor[0]] // note the switch in coordinates because the board array is reverse of the actual coordinates
-                if (potential == 0 && curr[2] == 'n') {
-                    pm.push(coor)
-                } else if (potential == 0 && curr[2] == 'a') {
-                    // attacking spot, check if there's a pawn to attack 
-                    let a = apm[i][0] == -2 ? -1 : 1 
-                    let b = this.getData('type') == 'BlackPiece' ? -1 : 1
-                    if (h+a > 0 && v+b > 0 && h+a < this.scene.board[0].length && v+b < this.scene.board.length) {
-                        let victim = this.scene.board[v+b][h+a]
-                        
-                        if (victim != 0 && victim.getData('type') != this.getData('type')) {
-                            pm.push(coor) 
-                        }
-                    }
+            if (this.inBounds(ifMoved[0], ifMoved[1])) {
+                // conduct move 
+                let boardSquare = this.scene.board[ifMoved[0]][ifMoved[1]]
+                if (boardSquare == 0 && move[2] == 'normal') {
+                    pm.push(ifMoved)
+                } else if (boardSquare == 0 && move[2] == 'attack') {
                     
-
+                    // find victim coordinates 
+                    // check if victim in bounds, then this.scene.board[victim_coor] --> push victim_coor 
+                    let [victim_r, victim_c] = [row+move[3][0], col+move[3][1]]
+                    let victim = this.scene.board[victim_r][victim_c]
+                    console.log('victim', victim)
+                    console.log('bounds check and 0 check', this.inBounds(victim_r, victim_c) && victim != 0, 'color check', this.getData('color'))
+                    // console.log('move', move)
+                    if (this.inBounds(victim_r, victim_c) && victim != 0 && victim.getData('color') != this.getData('color')) {
+                        pm.push([...ifMoved, victim_r, victim_c, victim])
+                    }
                 }
             }
             
         }
+
         return pm 
+    }
+
+    // should be moved to board.js 
+    inBounds(row, col) {
+        return row >= 0 && col >= 0 && row < this.scene.board.length && col < this.scene.board[0].length 
     }
 
     
