@@ -10,8 +10,8 @@ export default class Scout extends Piece {
         for (let i = 1; i < 4; i++) {
             this.moves.push([row_dir*i, 0, 'normal'])
         }
-        this.moves.push([row_dir*2, -2, 'attack', [row_dir*1, -1]])
-        this.moves.push([row_dir*2, 2, 'attack', [row_dir*1, 1]])
+        this.moves = this.moves.concat(this.attackMove())
+
     }
 
 }

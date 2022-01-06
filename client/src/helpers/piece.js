@@ -18,6 +18,15 @@ export default class Piece extends Phaser.GameObjects.Sprite {
         this.y = 50+row*100
     }
 
+    attackMove() {
+        // later should add restriction for who can only attack forward and who can attack back 
+        let moves = [] 
+        let row_dir = this.getData('color') == 'white' ? 1 : -1 
+        moves.push([row_dir*2, -2, 'attack', [row_dir*1, -1]])
+        moves.push([row_dir*2, 2, 'attack', [row_dir*1, 1]])
+        return moves 
+    }
+
     possibleMoves() {
         let pm = [] 
         // BE CAREFUL, NOTHING BELOW WILL WORK BECAUSE it's using h, v not row, col

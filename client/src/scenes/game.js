@@ -1,5 +1,6 @@
 import Soldier from '../helpers/pieces/soldier';
 import Scout from '../helpers/pieces/scout';
+import Queen from '../helpers/pieces/queen';
 
 
 // need to add color functionality 
@@ -21,6 +22,8 @@ export default class Game extends Phaser.Scene {
         this.load.image('blackPawn', 'src/assets/blackPawn.png');
         this.load.image('whiteRook', 'src/assets/whiteRook.png');
         this.load.image('blackRook', 'src/assets/blackRook.png');
+        this.load.image('whiteQueen', 'src/assets/whiteQueen.png');
+        this.load.image('blackQueen', 'src/assets/blackQueen.png');
     }
 
 
@@ -89,6 +92,7 @@ export default class Game extends Phaser.Scene {
            this.board[6][i] = this.createPiece(6, i, false, Scout)
            this.board[7][i] = this.createPiece(7, i, false, Soldier)
        }
+       this.board[5][0] = this.createPiece(5, 0, false, Queen)
 
        this.textConfig = {
         color: 'white',
@@ -208,8 +212,9 @@ export default class Game extends Phaser.Scene {
         this.setTurnText(true)
 
         this.group = this.color ? this.whitePieces : this.blackPieces  
-        this.ghostColor = this.color ? 'whitePawn' : 'blackPawn' 
         this.group.getChildren().forEach((piece) => {
+
+            console.log('piece', piece)
 
             if (piece.possibleMoves().length > 0) {
                 piece.setInteractive(); 
