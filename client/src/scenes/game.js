@@ -225,11 +225,15 @@ export default class Game extends Phaser.Scene {
                     piece.setScale(0.15);
                 })
 
-                piece.on('pointerup', () => {
-                    console.log('pointerup')
+
+                piece.on('pointerdown', () => {
+                    console.log('pointerdown')
                     let pm = piece.possibleMoves(true) 
                     console.log('pm', pm)
                     // deleteGhosts thing
+                    this.ghosts.forEach((ghost) => {
+                        ghost.destroy()
+                    })
                     for (let i = 0; i < pm.length; i += 1) {
                         const ghost = this.add.image(50+pm[i][1]*100, 50+pm[i][0]*100, piece.getData('type')).setScale(0.15).setAlpha(0.5)
                         ghost.setInteractive(); 
