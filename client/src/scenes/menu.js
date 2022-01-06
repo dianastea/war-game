@@ -9,28 +9,50 @@ class SceneMainMenu extends Phaser.Scene {
 
   create() {
     // eslint-disable-next-line no-undef
-    this.color = false; // FOR LATER 
-    let self = this 
-    this.socket = io('http://localhost:3000');
-    this.initialized = false; 
+    this.color = false; // this.color ? player is white : player is black 
+    this.gameRequested = false; // refers to whether a player has requested to start the game 
+
+
+    // SETS START GAME TEXT
+    this.startGame = this.add.text(
+      this.game.config.width * 0.2,
+      this.game.config.height * 0.2,
+      'Start a new game', {
+        color: '#d0c600',
+        fontFamily: 'sans-serif',
+        fontSize: '30px',
+        lineHeight: 1.3,
+        align: 'center',
+      },
+    );
+    this.startGame.setInteractive();
+
+    this.socket = io('http://localhost:3000'); 
+    let self = this // because after the "this.socket.on" methods, "this" starts to refer to the *socket* 
 
     this.socket.on('connect', function () {
         console.log('Connected!');
     });    
-    
 
-    // this.socket.on('isPlayerA', function () {
-    //   self.color = true;
-    //   console.log('isPlayerA', self)
-    // })
-
+    this.startGame.on('pointerup', () => {
+      if (!this.gameRequested) {
+        // This is the first player to request the game 
+        this.socket.emit('startingGame')
+      } else {
+        // This is the second player requesting a game 
+        this.socket.emit('playerJoined')
+      }
+      
+    });
     
-    this.socket.on('starting', function (id) {
-      self.initialized = true
-      if (self.socket.id == id) {
-        self.color = true 
-        console.log(self)
-        self.startGame.destroy()
+    // response to a player requesting to start the game 
+    this.socket.on('starting', function (id) { 
+      self.gameRequested = true 
+      if (self.socket.id == id) { // for the player who requested to start. . . 
+        self.color = true // sets this player to be Player 1 (White)
+        
+        // add new text to show "Waiting for Opponent"
+        self.startGame.destroy() 
         self.startGame = self.add.text(
           self.game.config.width * 0.2,
           self.game.config.height * 0.2,
@@ -47,37 +69,11 @@ class SceneMainMenu extends Phaser.Scene {
       
     })
 
+    // officially starts the game for both players 
     this.socket.on('startGame', () => {
       this.scene.start('SceneGame', { socket: this.socket, color: this.color });
     })
 
-    // this.socket.on('newplayer', (sckt) => {
-    //   console.log(sckt);
-    // });
-
-    this.startGame = this.add.text(
-      this.game.config.width * 0.2,
-      this.game.config.height * 0.2,
-      'Start a new game', {
-        color: '#d0c600',
-        fontFamily: 'sans-serif',
-        fontSize: '30px',
-        lineHeight: 1.3,
-        align: 'center',
-      },
-    );
-
-    this.startGame.setInteractive();
-    this.startGame.on('pointerup', () => {
-      if (!this.initialized) {
-        console.log('starting game')
-        this.socket.emit('startingGame')
-      } else {
-        this.socket.emit('playerJoined')
-      }
-      
-      
-    });
 
   }
 }

@@ -8,13 +8,5 @@ export default class WhitePiece extends Piece {
         this.setTexture('whitePawn')
     }
 
-    
-    // movePossibility 
-    updatePosition(v, h) {
-        this.setData('boardV', v)
-        this.setData('boardH', h)
-        this.x = 50+h*100
-        this.y = 50+v*100
-    }
-
 }
+

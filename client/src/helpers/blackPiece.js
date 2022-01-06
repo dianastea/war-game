@@ -9,14 +9,4 @@ export default class BlackPiece extends Piece {
 
     }
 
-    // movePossibility 
-    updatePosition(v, h) {
-        this.setData('boardV', v)
-        this.setData('boardH', h)
-        this.x = 50+h*100
-        this.y = 50+v*100 
-    }
-
-
-
 }

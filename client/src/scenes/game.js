@@ -14,8 +14,8 @@ export default class Game extends Phaser.Scene {
 
     init(data) {
         this.socket = data.socket;
-        this.color = data.color; // true = isPlayerA
-        this.turn = data.color 
+        this.color = data.color; // true = player1 (white)
+        this.turn = data.color // starts off as true (because player1 starts) -- represents whether it's user's turn
     }
 
     preload() {
@@ -28,9 +28,10 @@ export default class Game extends Phaser.Scene {
         this.whitePieces = this.add.group();
         this.blackPieces = this.add.group(); 
         this.board = this.createBoard(); 
-        this.ghosts = [] 
-        console.log(this.board)
-        // this.movePiece(4, 3, this.board[7][1])
+        this.ghosts = [] // refers to the ghost pieces that appear when user clicks on piece to see possible movement options
+        
+        console.log(this.board) 
+
         if (this.turn) {
             this.setInteractiveness(); 
         } else {
@@ -39,9 +40,10 @@ export default class Game extends Phaser.Scene {
 
         let self = this; 
         
+        // response to changing turns 
         this.socket.on('change', function (color, vh, nvh) {
             if (color != self.color) {
-                console.log('changing turns!', vh[0], vh[1], nvh[0], nvh[1])
+                // console.log('changing turns!', vh[0], vh[1], nvh[0], nvh[1])
                 self.opponentMove(vh, nvh)
                 this.turn = true; 
                 self.setInteractiveness(); 
@@ -50,7 +52,6 @@ export default class Game extends Phaser.Scene {
         })
 
         this.socket.on('destroy', function (color, v, h) {
-            console.log('DESTROY!')
             if (color != self.color) {
                 self.selfDestroy(v, h)
             }
@@ -117,10 +118,10 @@ export default class Game extends Phaser.Scene {
         return this.board; 
     }
 
-    setTurnText(color) {
+    setTurnText(turn) {
         // if white (player1)
-        console.log('setting Turn Text', color)
-        let text = color ? 'YOUR TURN' : "OPPONENT'S TURN"
+        console.log('setting Turn Text', turn)
+        let text = turn ? 'YOUR TURN' : "OPPONENT'S TURN"
         if (this.textTurn) {
             this.textTurn.destroy() 
 
@@ -217,7 +218,6 @@ export default class Game extends Phaser.Scene {
     }
 
     disableInteractiveness() {
-        console.log('disabling Interactiveness')
         this.setTurnText(false)
         this.group = this.color ? this.whitePieces : this.blackPieces 
         this.group.getChildren().forEach((piece) => {
@@ -226,13 +226,13 @@ export default class Game extends Phaser.Scene {
     }
 
     setInteractiveness() {
-        console.log('setting Interactiveness')
-        this.group = this.color ? this.whitePieces : this.blackPieces // CHANGE LATER 
         this.setTurnText(true)
-        this.ghostColor = this.color ? 'whitePawn' : 'blackPawn' // CHANGE LATER 
+
+        this.group = this.color ? this.whitePieces : this.blackPieces  
+        this.ghostColor = this.color ? 'whitePawn' : 'blackPawn' 
         this.group.getChildren().forEach((piece) => {
-            console.log(piece.possibleMoves(false))
-            if (piece.possibleMoves(false).length > 0) {
+
+            if (piece.possibleMoves().length > 0) {
                 piece.setInteractive(); 
 
                 piece.on('pointerover', () => {
@@ -245,7 +245,7 @@ export default class Game extends Phaser.Scene {
 
                 piece.on('pointerup', () => {
                     console.log('pointerup')
-                    let pm = piece.possibleMoves(true) 
+                    let pm = piece.possibleMoves() 
                     console.log('pm', pm)
                     // deleteGhosts thing
                     for (let i = 0; i < pm.length; i += 1) {
