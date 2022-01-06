@@ -1,7 +1,7 @@
 import io from 'socket.io-client';
 import WhitePiece from "../helpers/whitePiece"
 import BlackPiece from "../helpers/blackPiece"
-
+import Soldier from '../helpers/pieces/soldier';
 
 
 // need to add color functionality 
@@ -130,12 +130,40 @@ export default class Game extends Phaser.Scene {
     }
 
     movePiece(move, piece) {
+        console.log(move, piece)
+        
+        let [n_row, n_col, type] = move.slice(0,3)
+        
+        let [row, col] = [piece.getData('row'), piece.getData('col')]
+        this.board[row][col] = 0
+        this.board[n_row][n_col] = piece
+        console.log('EDITED BOARD AFTER MOVE', this.board)
+        piece.updatePosition(n_row, n_col)
+        
+        this.ghosts.forEach((ghost) => {
+            ghost.destroy()
+        })
+        this.ghosts = [] 
+
+        if (type == 'attack') {
+            let [victim_r, victim_c, victim] = move.slice(3, 6)
+            victim.destroy()
+            this.socket.emit('destroy', this.color, victim_r, victim_c)
+        }
+
+        this.disableInteractiveness() 
+        this.turn = false 
+        this.socket.emit('change', this.color, [row, col], [n_row, n_col])
+
+    }
+
+    moveOldPiece(move, piece) {
         let nh = move[0]
         let nv = move[1]
         let attack = move[2]
 
-        let v = piece.getData('boardV')
-        const h = piece.getData('boardH')
+        let v = piece.getData('row')
+        const h = piece.getData('col')
         this.board[v][h] = 0; 
         this.board[nv][nh] = piece
 
@@ -193,29 +221,17 @@ export default class Game extends Phaser.Scene {
 
     }
 
-
-    createPiece(v, h, color) {
-        if (color) {
-            this.piece = new WhitePiece(
-                this, 
-                50+h*100, 
-                50+v*100, 
-                'whitePiece'
-            )
-        } else {
-            this.piece = new BlackPiece(
-                this, 
-                50+h*100, 
-                50+v*100, 
-                'blackPiece'
-            )
-        }
+    createPiece(row, col, white) {
+        let color = white ? 'white' : 'black'
+        this.piece = new Soldier(this, 50+col*100, 50+row*100, color, color + 'Soldier')
         this.piece.setScale(0.15)
-        this.piece.updatePosition(v, h)
+        this.piece.updatePosition(row, col)
 
-        color ? this.whitePieces.add(this.piece) : this.blackPieces.add(this.piece)
+        white ? this.whitePieces.add(this.piece) : this.blackPieces.add(this.piece)
         return this.piece; 
     }
+
+    // deleted the old createPiece 
 
     disableInteractiveness() {
         this.setTurnText(false)
@@ -249,7 +265,7 @@ export default class Game extends Phaser.Scene {
                     console.log('pm', pm)
                     // deleteGhosts thing
                     for (let i = 0; i < pm.length; i += 1) {
-                        const ghost = this.add.image(50+pm[i][0]*100, 50+pm[i][1]*100, this.ghostColor).setScale(0.15).setAlpha(0.5)
+                        const ghost = this.add.image(50+pm[i][1]*100, 50+pm[i][0]*100, this.ghostColor).setScale(0.15).setAlpha(0.5)
                         ghost.setInteractive(); 
 
                         ghost.on('pointerup', () => {
