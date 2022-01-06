@@ -14,8 +14,8 @@ export default class Piece extends Phaser.GameObjects.Sprite {
     updatePosition(row, col) {
         this.setData('row', row)
         this.setData('col', col)
-        this.x = 50+col*100
-        this.y = 50+row*100
+        this.x = 25+col*50
+        this.y = 25+row*50
     }
 
     attackMove() {

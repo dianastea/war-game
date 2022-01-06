@@ -67,18 +67,18 @@ export default class Game extends Phaser.Scene {
     createBoard() {
         this.board = []; 
 
-        for (let i = 0; i < 8; i += 1) {
-            this.board.push([0, 0, 0, 0, 0, 0, 0, 0]);
+        for (let i = 0; i < 16; i += 1) {
+            this.board.push([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
         }
 
         let colors = [0xFFFFFF, 0xB75555]
-        for (let i = 0; i < 8; i ++) {
+        for (let i = 0; i < 16; i ++) {
             let index = i % 2
             let row = [] 
-            for (let j = 0; j < 8; j++) {
+            for (let j = 0; j < 16; j++) {
                let color = colors[index]
                
-               row.push(this.add.rectangle(50+i*100, 50+j*100, 100, 100, color))
+               row.push(this.add.rectangle(25+i*50, 25+j*50, 50, 50, color))
                index = Math.abs(index - 1)
             }
        }
@@ -87,10 +87,10 @@ export default class Game extends Phaser.Scene {
            // board[h][v]
            this.board[0][i] = this.createPiece(0, i, true, Soldier)
            this.board[1][i] = this.createPiece(1, i, true, Scout)
-           this.board[6][i] = this.createPiece(6, i, false, Scout)
-           this.board[7][i] = this.createPiece(7, i, false, Soldier)
+           this.board[14][i] = this.createPiece(14, i, false, Scout)
+           this.board[15][i] = this.createPiece(15, i, false, Soldier)
        }
-       this.board[5][0] = this.createPiece(5, 0, false, Queen)
+       this.board[13][0] = this.createPiece(13, 0, false, Queen)
 
        this.textConfig = {
         color: 'white',
@@ -191,8 +191,8 @@ export default class Game extends Phaser.Scene {
 
     createPiece(row, col, white, type) {
         let color = white ? 'white' : 'black'
-        this.piece = new type(this, 50+col*100, 50+row*100, color, color)
-        this.piece.setScale(0.15)
+        this.piece = new type(this, 25+col*50, 25+row*50, color, color)
+        this.piece.setScale(0.08)
         this.piece.updatePosition(row, col)
 
         white ? this.whitePieces.add(this.piece) : this.blackPieces.add(this.piece)
@@ -218,11 +218,11 @@ export default class Game extends Phaser.Scene {
                 piece.setInteractive(); 
 
                 piece.on('pointerover', () => {
-                    piece.setScale(0.17);
+                    piece.setScale(0.10);
                 });
           
                 piece.on('pointerout', () => {
-                    piece.setScale(0.15);
+                    piece.setScale(0.08);
                 })
 
                 piece.on('pointerup', () => {
@@ -231,7 +231,7 @@ export default class Game extends Phaser.Scene {
                     console.log('pm', pm)
                     // deleteGhosts thing
                     for (let i = 0; i < pm.length; i += 1) {
-                        const ghost = this.add.image(50+pm[i][1]*100, 50+pm[i][0]*100, piece.getData('type')).setScale(0.15).setAlpha(0.5)
+                        const ghost = this.add.image(25+pm[i][1]*50, 25+pm[i][0]*50, piece.getData('type')).setScale(0.08).setAlpha(0.5)
                         ghost.setInteractive(); 
 
                         ghost.on('pointerup', () => {
