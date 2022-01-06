@@ -27,14 +27,14 @@ export default class Piece extends Phaser.GameObjects.Sprite {
         return moves 
     }
 
-    possibleMoves() {
+    possibleMoves(flag) {
         let pm = [] 
         // BE CAREFUL, NOTHING BELOW WILL WORK BECAUSE it's using h, v not row, col
         let row = this.getData('row') 
         let col = this.getData('col')
 
         let apm = this.moves // NEED TO CREATE 
-        console.log('apm',apm)
+        if (flag) console.log('apm',apm)
         for (let i = 0; i < apm.length; i ++ ) {
             let move = apm[i]  
             let ifMoved = [row+move[0], col+move[1], move[2]] // coordinates if piece moved 
@@ -51,8 +51,8 @@ export default class Piece extends Phaser.GameObjects.Sprite {
                     // check if victim in bounds, then this.scene.board[victim_coor] --> push victim_coor 
                     let [victim_r, victim_c] = [row+move[3][0], col+move[3][1]]
                     let victim = this.scene.board[victim_r][victim_c]
-                    console.log('victim', victim)
-                    console.log('bounds check and 0 check', this.inBounds(victim_r, victim_c) && victim != 0, 'color check', this.getData('color'))
+                    if (flag)
+                        console.log('victim', victim, victim_r, victim_c)
                     // console.log('move', move)
                     if (this.inBounds(victim_r, victim_c) && victim != 0 && victim.getData('color') != this.getData('color')) {
                         pm.push([...ifMoved, victim_r, victim_c, victim])

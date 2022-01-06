@@ -33,8 +33,6 @@ export default class Game extends Phaser.Scene {
         this.board = this.createBoard(); 
         this.ghosts = [] // refers to the ghost pieces that appear when user clicks on piece to see possible movement options
         
-        console.log(this.board) 
-
         if (this.turn) {
             this.setInteractiveness(); 
         } else {
@@ -143,7 +141,7 @@ export default class Game extends Phaser.Scene {
         let [row, col] = [piece.getData('row'), piece.getData('col')]
         this.board[row][col] = 0
         this.board[n_row][n_col] = piece
-        console.log('EDITED BOARD AFTER MOVE', this.board)
+        console.log('EDITED BOARD AFTER MOVE') 
         piece.updatePosition(n_row, n_col)
         
         this.ghosts.forEach((ghost) => {
@@ -153,10 +151,11 @@ export default class Game extends Phaser.Scene {
 
         if (type == 'attack') {
             let [victim_r, victim_c, victim] = move.slice(3, 6)
+            this.board[victim_r][victim_c] = 0 
             victim.destroy()
             this.socket.emit('destroy', this.color, victim_r, victim_c)
         }
-
+        this.printBoard(); 
         this.disableInteractiveness() 
         this.turn = false 
         this.socket.emit('change', this.color, [row, col], [n_row, n_col])
@@ -209,14 +208,13 @@ export default class Game extends Phaser.Scene {
     }
 
     setInteractiveness() {
+        this.printBoard() 
         this.setTurnText(true)
 
         this.group = this.color ? this.whitePieces : this.blackPieces  
         this.group.getChildren().forEach((piece) => {
 
-            console.log('piece', piece)
-
-            if (piece.possibleMoves().length > 0) {
+            if (piece.possibleMoves(false).length > 0) {
                 piece.setInteractive(); 
 
                 piece.on('pointerover', () => {
@@ -229,7 +227,7 @@ export default class Game extends Phaser.Scene {
 
                 piece.on('pointerup', () => {
                     console.log('pointerup')
-                    let pm = piece.possibleMoves() 
+                    let pm = piece.possibleMoves(true) 
                     console.log('pm', pm)
                     // deleteGhosts thing
                     for (let i = 0; i < pm.length; i += 1) {
@@ -247,5 +245,18 @@ export default class Game extends Phaser.Scene {
             }
         })
         
+    }
+
+    printBoard() {
+        const translation = {'whitePawn': 'wP', 'blackPawn': 'bP', 'whiteRook': 'wR', 'blackRook': 'bR', 'blackQueen': 'bQ'}
+
+        for (let row = 0; row < 8; row ++) {
+            let str = ''
+            for (let col = 0; col < 8; col ++) {
+                str += this.board[row][col] == 0 ? 0 : translation[this.board[row][col].getData('type')]
+                str += ' '
+            }
+            console.log(str)
+        }
     }
 }
