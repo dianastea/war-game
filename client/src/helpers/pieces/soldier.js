@@ -8,7 +8,7 @@ export default class Soldier extends Piece {
         let row_dir = color == 'black' ? -1 : 1 
         // move = [row_move, col_move, type, victim_coor (if attack)]
         this.moves.push([row_dir, 0, 'normal'])
-        this.moves = this.moves.concat(this.attackMove())
+        // this.moves = this.moves.concat(this.attackMove())
     }
 
 }

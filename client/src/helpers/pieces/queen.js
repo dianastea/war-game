@@ -16,7 +16,7 @@ export default class Queen extends Piece {
                 
             }
         }
-        this.moves = this.moves.concat(this.attackMove())
+        // this.moves = this.moves.concat(this.attackMove())
 
 
     }

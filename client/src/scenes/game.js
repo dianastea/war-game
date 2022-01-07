@@ -63,73 +63,17 @@ export default class Game extends Phaser.Scene {
 
     }
 
-    createBoard() {
-        this.board = []; 
+    attackPiece(move, piece) {
+        piece.attack(move)
 
-        for (let i = 0; i < 16; i += 1) {
-            this.board.push([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
-        }
+        // this.destroyGhosts(); 
+        // this.printBoard(); 
+        // this.disableInteractiveness(); 
+        // this.turn = false; 
 
-        let colors = [0xFFFFFF, 0xB75555]
-        for (let i = 0; i < 16; i ++) {
-            let index = i % 2
-            let row = [] 
-            for (let j = 0; j < 16; j++) {
-               let color = colors[index]
-               
-               row.push(this.add.rectangle(25+i*50, 25+j*50, 50, 50, color))
-               index = Math.abs(index - 1)
-            }
-       }
-        // TO FILL IN - add Pieces 
-       for (let i = 0; i < 8; i += 1) {
-           // board[h][v]
-           this.board[0][i] = this.createPiece(0, i, true, Soldier)
-           this.board[1][i] = this.createPiece(1, i, true, Scout)
-           this.board[14][i] = this.createPiece(14, i, false, Scout)
-           this.board[15][i] = this.createPiece(15, i, false, Soldier)
-       }
-       this.board[13][0] = this.createPiece(13, 0, false, Queen)
-
-       this.textConfig = {
-        color: 'white',
-        fontFamily: 'sans-serif',
-        fontSize: '25px',
-        lineHeight: 1.3,
-        align: 'center',
-      };
-
-      let p1 = this.color ? ' (You)' : ''
-      let p2 = this.color ? '' : ' (You)'
-      this.textPlayer1 = this.add.text(
-        850,
-        200,
-        'Player 1 - White' + p1,
-        this.textConfig,
-      );
-
-      this.textPlayer2 = this.add.text(
-          850, 
-          600, 
-          'Player 2 - Black' + p2, 
-          this.textConfig
-      ) 
-
-        this.textTurn = this.add.text(850, 400, 'GAME STARTING', this.textConfig)
-
-        console.log(this.whitePieces, this.blackPieces)
-        return this.board; 
-    }
-
-    setTurnText(turn) {
-        // if white (player1)
-        console.log('setting Turn Text', turn)
-        let text = turn ? 'YOUR TURN' : "OPPONENT'S TURN"
-        if (this.textTurn) {
-            this.textTurn.destroy() 
-
-        }
-        this.textTurn = this.add.text(850, 400, text, this.textConfig)
+        let coor = [piece.getData('row'), piece.getData('col')]
+        // this.socket.emit('change', this.color, [r, c], [r, c])
+        this.finishTurn(coor, coor)
     }
 
     movePiece(move, piece) {
@@ -143,21 +87,21 @@ export default class Game extends Phaser.Scene {
         console.log('EDITED BOARD AFTER MOVE') 
         piece.updatePosition(n_row, n_col)
         
-        this.ghosts.forEach((ghost) => {
-            ghost.destroy()
-        })
-        this.ghosts = [] 
+        this.finishTurn([row, col], [n_row, n_col])
+        // this.destroyGhosts(); 
+        // this.printBoard(); 
+        // this.disableInteractiveness(); 
+        // this.turn = false; 
+        // this.socket.emit('change', this.color, [row, col], [n_row, n_col])
 
-        if (type == 'attack') {
-            let [victim_r, victim_c, victim] = move.slice(3, 6)
-            this.board[victim_r][victim_c] = 0 
-            victim.destroy()
-            this.socket.emit('destroy', this.color, victim_r, victim_c)
-        }
+    }
+
+    finishTurn(old_coor, new_coor) {
+        this.destroyGhosts(); 
         this.printBoard(); 
-        this.disableInteractiveness() 
-        this.turn = false 
-        this.socket.emit('change', this.color, [row, col], [n_row, n_col])
+        this.disableInteractiveness(); 
+        this.turn = false; 
+        this.socket.emit('change', this.color, old_coor, new_coor)
 
     }
 
@@ -188,24 +132,6 @@ export default class Game extends Phaser.Scene {
 
     }
 
-    createPiece(row, col, white, type) {
-        let color = white ? 'white' : 'black'
-        this.piece = new type(this, 25+col*50, 25+row*50, color, color)
-        this.piece.setScale(0.08)
-        this.piece.updatePosition(row, col)
-
-        white ? this.whitePieces.add(this.piece) : this.blackPieces.add(this.piece)
-        return this.piece; 
-    }
-
-    disableInteractiveness() {
-        this.setTurnText(false)
-        this.group = this.color ? this.whitePieces : this.blackPieces 
-        this.group.getChildren().forEach((piece) => {
-            piece.disableInteractive(); 
-        })
-    }
-
     setInteractiveness() {
         this.printBoard() 
         this.setTurnText(true)
@@ -227,9 +153,9 @@ export default class Game extends Phaser.Scene {
 
                 piece.on('pointerdown', () => {
                     console.log('pointerdown')
-                    let pm = piece.possibleMoves(true) 
-                    console.log('pm', pm)
-                    // deleteGhosts thing
+                    let pm = piece.possibleMoves(true)
+                    let am = piece.attackMoves() 
+                    console.log('pm', pm, 'am', am)
                     this.ghosts.forEach((ghost) => {
                         ghost.destroy()
                     })
@@ -242,12 +168,110 @@ export default class Game extends Phaser.Scene {
                         })
                         this.ghosts.push(ghost)
                     }
+
+                    for (let i = 0; i < am.length; i += 1) {
+                        const ghost = this.add.rectangle(25+am[i][2]*50, 25+am[i][1]*50, 50, 50, 0xCC0000).setAlpha(0.25)
+                        ghost.setInteractive(); 
+                        ghost.on('pointerup', () => {
+                            console.log('attacking')
+                            this.attackPiece(am[i], piece)
+                        })
+                        this.ghosts.push(ghost)
+                    }
                 })
 
 
             }
         })
         
+    }
+    
+    disableInteractiveness() {
+        this.setTurnText(false)
+        this.group = this.color ? this.whitePieces : this.blackPieces 
+        this.group.getChildren().forEach((piece) => {
+            piece.disableInteractive(); 
+        })
+    }
+
+// CREATING BOARD / PIECES 
+    createBoard() {
+        this.board = []; 
+
+        for (let i = 0; i < 16; i += 1) {
+            this.board.push([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+        }
+
+        let colors = [0xFFFFFF, 0xB75555]
+        for (let i = 0; i < 16; i ++) {
+            let index = i % 2
+            let row = [] 
+            for (let j = 0; j < 16; j++) {
+            let color = colors[index]
+            
+            row.push(this.add.rectangle(25+i*50, 25+j*50, 50, 50, color))
+            index = Math.abs(index - 1)
+            }
+    }
+        // TO FILL IN - add Pieces 
+    for (let i = 0; i < 8; i += 1) {
+        // board[h][v]
+        this.board[0][i] = this.createPiece(0, i, true, Soldier)
+        this.board[1][i] = this.createPiece(1, i, true, Scout)
+        this.board[14][i] = this.createPiece(14, i, false, Scout)
+        this.board[15][i] = this.createPiece(15, i, false, Soldier)
+    }
+    this.board[13][0] = this.createPiece(13, 0, false, Queen)
+
+    this.textConfig = {
+        color: 'white',
+        fontFamily: 'sans-serif',
+        fontSize: '25px',
+        lineHeight: 1.3,
+        align: 'center',
+    };
+
+    let p1 = this.color ? ' (You)' : ''
+    let p2 = this.color ? '' : ' (You)'
+    this.textPlayer1 = this.add.text(
+        850,
+        200,
+        'Player 1 - White' + p1,
+        this.textConfig,
+    );
+
+    this.textPlayer2 = this.add.text(
+        850, 
+        600, 
+        'Player 2 - Black' + p2, 
+        this.textConfig
+    ) 
+
+        this.textTurn = this.add.text(850, 400, 'GAME STARTING', this.textConfig)
+
+        console.log(this.whitePieces, this.blackPieces)
+        return this.board; 
+    }
+
+    createPiece(row, col, white, type) {
+        let color = white ? 'white' : 'black'
+        this.piece = new type(this, 25+col*50, 25+row*50, color, color)
+        this.piece.setScale(0.08)
+        this.piece.updatePosition(row, col)
+
+        white ? this.whitePieces.add(this.piece) : this.blackPieces.add(this.piece)
+        return this.piece; 
+    }
+
+    setTurnText(turn) {
+        // if white (player1)
+        console.log('setting Turn Text', turn)
+        let text = turn ? 'YOUR TURN' : "OPPONENT'S TURN"
+        if (this.textTurn) {
+            this.textTurn.destroy() 
+
+        }
+        this.textTurn = this.add.text(850, 400, text, this.textConfig)
     }
 
     printBoard() {
@@ -262,4 +286,15 @@ export default class Game extends Phaser.Scene {
             console.log(str)
         }
     }
+
+    destroyGhosts() {
+        this.ghosts.forEach((ghost) => {
+            ghost.destroy()
+        })
+        this.ghosts = [] 
+    }
+
+    
+
+    
 }

@@ -4,6 +4,10 @@ export default class Piece extends Phaser.GameObjects.Sprite {
     constructor(scene, x, y, key, type, color) {
         super(scene, x, y, key)
         this.scene = scene 
+        this.strength = 2
+        this.health = 2
+        this.attack_radius = 1 
+
         this.scene.add.existing(this)
         this.setData({'type': type, 'color': color, 'row': 0, 'col': 0})
         let texture = type 
@@ -17,13 +21,32 @@ export default class Piece extends Phaser.GameObjects.Sprite {
         this.y = 25+row*50
     }
 
-    attackMove() {
-        // later should add restriction for who can only attack forward and who can attack back 
+    attack(move) {
+        let [vr, vc, victim] = move.slice(1, 4)
+        victim.health -= 1
+        if (victim.health == 0) {
+            this.scene.board[vr][vc] = 0 
+            victim.destroy(); 
+            this.scene.socket.emit('destroy', this.scene.color, vr, vc)
+        }
+    }
+
+
+    attackMoves() {
         let moves = [] 
-        let row_dir = this.getData('color') == 'white' ? 1 : -1 
-        moves.push([row_dir*2, -2, 'attack', [row_dir*1, -1]])
-        moves.push([row_dir*2, 2, 'attack', [row_dir*1, 1]])
-        return moves 
+        let [r, c] = [this.getData('row'), this.getData('col')]
+        for (let r_dir = -1; r_dir < 2; r_dir++) {
+            for (let c_dir = -1; c_dir < 2; c_dir ++) {
+                if (this.inBounds(r+r_dir, c+c_dir)) {
+                    let victim = this.scene.board[r + r_dir][c + c_dir]
+                    if (victim != 0 && victim.getData('color') != this.getData('color')) {
+                        moves.push(['attack', r+r_dir, c+c_dir, victim])
+                    }
+                }
+                
+            }
+        }
+        return moves
     }
 
     possibleMoves(flag) {
@@ -44,19 +67,7 @@ export default class Piece extends Phaser.GameObjects.Sprite {
                 let boardSquare = this.scene.board[ifMoved[0]][ifMoved[1]]
                 if (boardSquare == 0 && move[2] == 'normal') {
                     pm.push(ifMoved)
-                } else if (boardSquare == 0 && move[2] == 'attack') {
-                    
-                    // find victim coordinates 
-                    // check if victim in bounds, then this.scene.board[victim_coor] --> push victim_coor 
-                    let [victim_r, victim_c] = [row+move[3][0], col+move[3][1]]
-                    let victim = this.scene.board[victim_r][victim_c]
-                    if (flag)
-                        console.log('victim', victim, victim_r, victim_c)
-                    // console.log('move', move)
-                    if (this.inBounds(victim_r, victim_c) && victim != 0 && victim.getData('color') != this.getData('color')) {
-                        pm.push([...ifMoved, victim_r, victim_c, victim])
-                    }
-                }
+                } 
             }
             
         }
