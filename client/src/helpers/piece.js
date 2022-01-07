@@ -6,7 +6,6 @@ export default class Piece extends Phaser.GameObjects.Sprite {
         this.scene = scene 
         this.scene.add.existing(this)
         this.setData({'type': type, 'color': color, 'row': 0, 'col': 0})
-        
         let texture = type 
         this.setTexture(texture)
     }

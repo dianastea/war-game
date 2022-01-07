@@ -26,7 +26,6 @@ export default class Game extends Phaser.Scene {
         this.load.image('blackQueen', 'src/assets/blackQueen.png');
     }
 
-
     create() {
         this.whitePieces = this.add.group();
         this.blackPieces = this.add.group(); 
@@ -46,7 +45,7 @@ export default class Game extends Phaser.Scene {
             if (color != self.color) {
                 // console.log('changing turns!', vh[0], vh[1], nvh[0], nvh[1])
                 self.opponentMove(vh, nvh)
-                this.turn = true; 
+                self.turn = true; 
                 self.setInteractiveness(); 
             }
             
@@ -254,9 +253,9 @@ export default class Game extends Phaser.Scene {
     printBoard() {
         const translation = {'whitePawn': 'wP', 'blackPawn': 'bP', 'whiteRook': 'wR', 'blackRook': 'bR', 'blackQueen': 'bQ'}
 
-        for (let row = 0; row < 8; row ++) {
+        for (let row = 0; row < 16; row ++) {
             let str = ''
-            for (let col = 0; col < 8; col ++) {
+            for (let col = 0; col < 16; col ++) {
                 str += this.board[row][col] == 0 ? 0 : translation[this.board[row][col].getData('type')]
                 str += ' '
             }

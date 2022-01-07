@@ -4,7 +4,6 @@ export default class Soldier extends Piece {
     
     constructor(scene, x, y, color, key) {
         super(scene, x, y, key, color + 'Pawn', color); 
-
         this.moves = [] 
         let row_dir = color == 'black' ? -1 : 1 
         // move = [row_move, col_move, type, victim_coor (if attack)]
