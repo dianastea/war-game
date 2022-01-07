@@ -6,7 +6,7 @@ export default class Piece extends Phaser.GameObjects.Sprite {
         this.scene = scene 
         this.strength = 2
         this.health = 2
-        this.attack_radius = 1 
+        this.attack_radius = 1
 
         this.scene.add.existing(this)
         this.setData({'type': type, 'color': color, 'row': 0, 'col': 0})
@@ -50,35 +50,97 @@ export default class Piece extends Phaser.GameObjects.Sprite {
     }
 
     possibleMoves(flag) {
-        let pm = [] 
-        // BE CAREFUL, NOTHING BELOW WILL WORK BECAUSE it's using h, v not row, col
-        let row = this.getData('row') 
-        let col = this.getData('col')
-
-        let apm = this.moves // NEED TO CREATE 
-        if (flag) console.log('apm',apm)
-        for (let i = 0; i < apm.length; i ++ ) {
-            let move = apm[i]  
-            let ifMoved = [row+move[0], col+move[1], move[2]] // coordinates if piece moved 
-            
-            // checks that the move is in bounds 
-            if (this.inBounds(ifMoved[0], ifMoved[1])) {
-                // conduct move 
-                let boardSquare = this.scene.board[ifMoved[0]][ifMoved[1]]
-                if (boardSquare == 0 && move[2] == 'normal') {
-                    pm.push(ifMoved)
-                } 
-            }
-            
-        }
-
-        return pm 
+        return this.doApm();
     }
+
+
 
     // should be moved to board.js 
     inBounds(row, col) {
         return row >= 0 && col >= 0 && row < this.scene.board.length && col < this.scene.board[0].length 
     }
-
     
+    /**
+     * Sets this.moves to all possible moves in a single direction.
+     * @param {Array} dir - Pair represented the change in row and change in column 
+     * @param {integer} steps - max amount of distance the piece can travel
+     */
+
+    getApm(dir, steps) {
+        let row = this.getData('row') 
+        let col = this.getData('col')
+        let visited = [[row, col, 'normal']];
+        let stack = [];
+        stack.push([row, col, 'normal']);
+
+        
+        while (stack.length != 0) {
+            if (visited.length > steps) {
+                return
+            }
+            let s = stack.pop()
+            console.log(s)
+            let boardSquare = 1
+            if (!this.inBounds(s[0] + dir[0], s[1] + dir[1])) 
+                return
+            boardSquare = this.scene.board[s[0] + dir[0]][s[1] + dir[1]]
+            if(boardSquare != 0) {
+                return 
+            }
+            if (boardSquare == 0 || s == visited[0]) {
+                
+                visited.push(s)
+                this.moves.push([s[0] + dir[0], s[1] + dir[1], 'normal'])
+                stack.push([s[0] + dir[0], s[1] + dir[1], 'normal']) 
+            }
+            
+        }
+
+        if (visited.length == 0)
+            return
+        
+        //visited.forEach(element => this.moves.push(element));
+    }
+
+    /**
+     * Calculates all possible moves of piece
+     * @returns nested array containing moves [[x1, y1, 'normal']....]
+     */
+
+    doApm() {
+        if (this.getData('type').includes("Rook")) {
+            this.moves = [];
+            //[possibleX, possibleY], max_travel_distance
+            this.getApm([1,0], 3);
+            this.getApm([-1,0], 3);
+            this.getApm([0,1], 3);
+            this.getApm([0,-1], 3);
+            this.getApm([-1,1], 3);
+            this.getApm([1,1], 3);
+            this.getApm([1,-1], 3);
+            this.getApm([-1,-1], 3);
+            // console.log(row, col)
+            // console.log(this.moves);
+        } else if (this.getData('type').includes("Pawn")) {
+            this.moves = [];
+            //[possibleX, possibleY], max_travel_distance
+            this.getApm([1,0], 1);
+            this.getApm([-1,0], 1);
+            this.getApm([0,1], 1);
+            this.getApm([0,-1], 1);
+            // console.log(row, col)
+            // console.log(this.moves);
+        } else if (this.getData('type').includes("Queen") || true) {
+            this.moves = [];
+            //[possibleX, possibleY], max_travel_distance
+            this.getApm([1,0], 1);
+            this.getApm([-1,0], 1);
+            this.getApm([0,1], 1);
+            this.getApm([0,-1], 1);
+            // console.log(row, col)
+            // console.log(this.moves);    
+        }
+
+        return this.moves
+    }
 }
