@@ -1,15 +1,16 @@
 import Phaser from 'phaser'; 
 
-export default class Piece extends Phaser.GameObjects.Sprite {
-    constructor(scene, x, y, key, type, color) {
+export default class Piece extends Phaser.GameObjects.Sprite {  
+    constructor(scene, x, y, key, type, color, healthbar) {
         super(scene, x, y, key)
         this.scene = scene 
         this.strength = 2
         this.health = 2
         this.attack_radius = 1
+        this.healthbar = healthbar
 
         this.scene.add.existing(this)
-        this.setData({'type': type, 'color': color, 'row': 0, 'col': 0})
+        this.setData({'type': type, 'color': color, 'row': 0, 'col': 0, 'healthbar' : healthbar})
         let texture = type 
         this.setTexture(texture)
     }
@@ -24,11 +25,21 @@ export default class Piece extends Phaser.GameObjects.Sprite {
     attack(move) {
         let [vr, vc, victim] = move.slice(1, 4)
         victim.health -= 1
+        let dmg = 1
+        
         if (victim.health == 0) {
-            this.scene.board[vr][vc] = 0 
-            victim.destroy(); 
+            this.scene.board[vr][vc] = 0
+            victim.healthbar.bar.destroy();
+            victim.destroy();
+           
             this.scene.socket.emit('destroy', this.scene.color, vr, vc)
         }
+        else {
+            victim.healthbar.decrease(dmg*50);
+            this.scene.socket.emit('damage', this.scene.color, vr, vc, dmg)
+            
+        }
+        
     }
 
 
