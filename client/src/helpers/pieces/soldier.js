@@ -2,8 +2,8 @@ import Piece from "../piece";
 
 export default class Soldier extends Piece {
     
-    constructor(scene, x, y, color, key) {
-        super(scene, x, y, key, color + 'Pawn', color); 
+    constructor(scene, x, y, color, key, healthbar) {
+        super(scene, x, y, key, color + 'Pawn', color, healthbar); 
 
         this.moves = [] 
         let row_dir = color == 'black' ? -1 : 1 

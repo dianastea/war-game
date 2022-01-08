@@ -1,7 +1,7 @@
 import Soldier from '../helpers/pieces/soldier';
 import Scout from '../helpers/pieces/scout';
 import Queen from '../helpers/pieces/queen';
-
+import HealthBar from '../helpers/healthbar'
 
 // need to add color functionality 
 export default class Game extends Phaser.Scene {
@@ -57,6 +57,12 @@ export default class Game extends Phaser.Scene {
             }
         })
 
+        this.socket.on('damage', function (color, v, h, dmg) {
+            if (color != self.color) {
+                self.selfDamage(v, h, dmg)
+            }
+        })
+
     }
 
     update() {
@@ -65,7 +71,6 @@ export default class Game extends Phaser.Scene {
 
     attackPiece(move, piece) {
         piece.attack(move)
-
         // this.destroyGhosts(); 
         // this.printBoard(); 
         // this.disableInteractiveness(); 
@@ -86,7 +91,10 @@ export default class Game extends Phaser.Scene {
         this.board[n_row][n_col] = piece
         console.log('EDITED BOARD AFTER MOVE') 
         piece.updatePosition(n_row, n_col)
-        
+        piece.getData('healthbar').setX(n_col*50)
+        piece.getData('healthbar').setY(45 +n_row*50)
+        console.log(n_col +" " +  n_row)
+        piece.getData('healthbar').draw()
         this.finishTurn([row, col], [n_row, n_col])
         // this.destroyGhosts(); 
         // this.printBoard(); 
@@ -108,13 +116,19 @@ export default class Game extends Phaser.Scene {
     selfDestroy(v, h) {
         console.log('in the self destroy', this.board[v][h])
         let piece = this.board[v][h]
+        piece.getData('healthbar').bar.destroy()
         piece.destroy() 
-
         if (this.whitePieces.children.size == 0 || this.blackPieces.children.size == 0) {
             console.log('game over')
         }
         
         this.board[v][h] = 0 
+    }
+
+    selfDamage(v, h, dmg) {
+        let piece = this.board[v][h]
+        piece.getData('healthbar').decrease(dmg*50)
+        
     }
 
     opponentMove(vh, nvh) {
@@ -127,7 +141,9 @@ export default class Game extends Phaser.Scene {
         this.board[v][h] = 0
         this.board[nv][nh] = piece 
         piece.updatePosition(nv, nh)
-
+        piece.getData('healthbar').setX(nh*50)
+        piece.getData('healthbar').setY(45 + nv * 50)
+        piece.getData('healthbar').draw()
         console.log(piece)
 
     }
@@ -253,7 +269,8 @@ export default class Game extends Phaser.Scene {
 
     createPiece(row, col, white, type) {
         let color = white ? 'white' : 'black'
-        this.piece = new type(this, 25+col*50, 25+row*50, color, color)
+        let healthbar = new HealthBar(this, 25+col*50, 20 + row*50)
+        this.piece = new type(this, 25+col*50, 25+row*50, color, color, healthbar)
         this.piece.setScale(0.08)
         this.piece.updatePosition(row, col)
 
