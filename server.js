@@ -21,15 +21,15 @@ io.on('connection', function (socket) {
         * enemy socket takes request and removes the destroyed piece from the board */
     socket.on('damage', function (color, v, h, dmg) {
         io.emit('damage', color, v, h, dmg)
-    })
+    });
 
     socket.on('destroy', function (color, v, h) {
         io.emit('destroy', color, v, h)
-    })
+    });
     
     socket.on('setVisible', function (row, col) {
         io.emit('setVisible', row, col)
-    })
+    });
 
     /* PLAYER DISCONNECTS (refreshing or closing tab) */
     socket.on('disconnect', function () {
@@ -41,14 +41,13 @@ io.on('connection', function (socket) {
     socket.on('startingGame', function() {
         console.log('starting game')
         io.emit('starting', socket.id)
-    })
+    });
 
     /* SECOND PLAYER HITS 'START GAME' */
     socket.on('playerJoined', () => {
         console.log('player joined')
         io.emit('startGame')
-    })
-    
+    });
 
 });
 

@@ -1,7 +1,6 @@
 import Phaser from 'phaser';
 import io from 'socket.io-client';
 
-
 class SceneMainMenu extends Phaser.Scene {
   constructor() {
     super({ key: 'SceneMainMenu' });

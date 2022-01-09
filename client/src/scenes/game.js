@@ -5,6 +5,7 @@ import Sniper from '../helpers/pieces/sniper';
 import Spy from '../helpers/pieces/spy';
 import Cannon from '../helpers/pieces/cannon';
 import HealthBar from '../helpers/healthbar'
+import { infoTextConfig, BASE_ASSET_PATH, SPRITE_WIDTH, SPRITE_HEIGHT } from "../config";
 
 // need to add color functionality 
 export default class Game extends Phaser.Scene {
@@ -12,6 +13,8 @@ export default class Game extends Phaser.Scene {
         super({
             key: 'SceneGame'
         });
+        this.whiteSoldiers = [];
+        this.blackSoldiers = [];
     }
 
     init(data) {
@@ -20,19 +23,34 @@ export default class Game extends Phaser.Scene {
         this.turn = data.color // starts off as true (because player1 starts) -- represents whether it's user's turn
     }
 
+    
+
+    /**
+     * @description Loads sprite from spritesheet given asset path 
+     * @param {Phaser.Scene} scene Phaser Game Scene
+     * @param {string} name Name of sprite being loaded 
+     * @param {string} filename String representing spritesheet filename 
+     * @param {width} width Pixel width of single sprite frame
+     * @param {height} height Pixel height of single sprite frame
+     */
+    loadSprite(name,filename,width,height) {
+        const spriteWidth = width === undefined ? SPRITE_WIDTH : width;
+        const spriteHeight = height === undefined ? SPRITE_HEIGHT : height;
+        this.load.spritesheet(name, BASE_ASSET_PATH + filename, {frameWidth: spriteWidth, frameHeight: spriteHeight});
+    }
+
     preload() {
-        this.load.image('whitePawn', 'src/assets/whitePawn.png');
-        this.load.image('blackPawn', 'src/assets/blackPawn.png');
-        this.load.image('whiteKing', 'src/assets/whiteRook.png');
-        this.load.image('blackKing', 'src/assets/blackRook.png');
-        this.load.image('whiteQueen', 'src/assets/whiteQueen.png');
-        this.load.image('blackQueen', 'src/assets/blackQueen.png');
-        this.load.image('blackSniper', 'src/assets/blackSniper.png');
-        this.load.image('whiteSpy', 'src/assets/whiteSpy.png');
-        this.load.image('blackSpy', 'src/assets/blackSpy.png');
-        this.load.image('blackSpy', 'src/assets/blackSpy.png');
-        this.load.image('whiteCannon', 'src/assets/whiteCannon.png');
-        this.load.image('blackCannon', 'src/assets/blackCannon.png');
+        this.loadSprite('whitePawn', 'soldier-sheet.png');
+        this.loadSprite('blackPawn', 'soldier-sheet.png');
+        this.loadSprite('whiteKing', 'king-sheet.png');
+        this.loadSprite('blackKing', 'king-sheet.png');
+        this.loadSprite('whiteQueen', 'queen-sheet.png');
+        this.loadSprite('blackQueen', 'queen-sheet.png');
+        this.loadSprite('blackSniper', 'sniper-sheet.png');
+        this.loadSprite('whiteSpy', 'spy-sheet.png');
+        this.loadSprite('blackSpy', 'spy-sheet.png');
+        this.loadSprite('whiteCannon', 'cannon-sheet.png');
+        this.loadSprite('blackCannon', 'cannon-sheet.png');
     }
 
     create() {
@@ -48,6 +66,29 @@ export default class Game extends Phaser.Scene {
             this.disableInteractiveness(); 
         }
 
+        // Might need a more robust way of setting this up
+        this.anims.create({
+            key: 'idleWhitePawn',
+            frames: this.anims.generateFrameNames('whitePawn', { start: 0, end: 3 }),
+            frameRate: 10,
+            repeat: -1
+        });
+
+        this.anims.create({
+            key: 'idleBlackPawn',
+            frames: this.anims.generateFrameNames('blackPawn', { start: 0, end: 3 }),
+            frameRate: 10,
+            repeat: -1
+        });
+
+        this.whiteSoldiers.forEach((soldier) => {
+            soldier.anims.play('idleWhitePawn', true);
+        });
+
+        this.blackSoldiers.forEach((soldier) => {
+            soldier.anims.play('idleBlackPawn', true);
+        });
+        
         let self = this; 
         
         // response to changing turns 
@@ -83,7 +124,6 @@ export default class Game extends Phaser.Scene {
     }
 
     update() {
-
     }
 
     attackPiece(move, piece) {
@@ -250,7 +290,7 @@ export default class Game extends Phaser.Scene {
         })
     }
 
-// CREATING BOARD / PIECES 
+    // CREATING BOARD / PIECES 
     createBoard() {
         this.board = []; 
 
@@ -269,27 +309,22 @@ export default class Game extends Phaser.Scene {
             index = Math.abs(index - 1)
             }
     }
-        // TO FILL IN - add Pieces 
+    // TO FILL IN - add Pieces 
     for (let i = 0; i < 8; i += 1) {
         // board[h][v]
-        this.board[0][i] = this.createPiece(0, i, true, Soldier)
-        this.board[1][i] = this.createPiece(1, i, true, King)
-        this.board[14][i] = this.createPiece(14, i, false, King)
-        this.board[15][i] = this.createPiece(15, i, false, Soldier)
-    }
-    this.board[13][0] = this.createPiece(13, 0, false, Queen)
-    this.board[13][1] = this.createPiece(13, 1, false, Sniper)
-    this.board[13][2] = this.createPiece(13, 2, false, Spy)
-    this.board[8][2] = this.createPiece(8, 2, true, Cannon)
-    this.cannons.push(this.board[8][2]) 
+        this.board[0][i] = this.createPiece(0, i, true, Soldier);
+        this.board[1][i] = this.createPiece(1, i, true, King);
+        this.board[14][i] = this.createPiece(14, i, false, King);
+        this.board[15][i] = this.createPiece(15, i, false, Soldier);
 
-    this.textConfig = {
-        color: 'white',
-        fontFamily: 'sans-serif',
-        fontSize: '25px',
-        lineHeight: 1.3,
-        align: 'center',
-    };
+        this.whiteSoldiers.push(this.board[0][i]);
+        this.blackSoldiers.push(this.board[15][i]);
+    }
+    this.board[13][0] = this.createPiece(13, 0, false, Queen);
+    this.board[13][1] = this.createPiece(13, 1, false, Sniper);
+    this.board[13][2] = this.createPiece(13, 2, false, Spy);
+    this.board[8][2] = this.createPiece(8, 2, true, Cannon);
+    this.cannons.push(this.board[8][2]) 
 
     let p1 = this.color ? ' (You)' : ''
     let p2 = this.color ? '' : ' (You)'
@@ -297,17 +332,17 @@ export default class Game extends Phaser.Scene {
         850,
         200,
         'Player 1 - White' + p1,
-        this.textConfig,
+        infoTextConfig,
     );
 
     this.textPlayer2 = this.add.text(
         850, 
         600, 
         'Player 2 - Black' + p2, 
-        this.textConfig
+        infoTextConfig,
     ) 
 
-        this.textTurn = this.add.text(850, 400, 'GAME STARTING', this.textConfig)
+        this.textTurn = this.add.text(850, 400, 'GAME STARTING', infoTextConfig)
 
         console.log(this.whitePieces, this.blackPieces)
         return this.board; 
@@ -317,22 +352,19 @@ export default class Game extends Phaser.Scene {
         let color = white ? 'white' : 'black'
         let healthbar = new HealthBar(this, 25+col*50, 20 + row*50)
         this.piece = new type(this, 25+col*50, 25+row*50, color, color, healthbar)
-        console.log(this.piece)
         this.piece.updatePosition(row, col)
-
         white ? this.whitePieces.add(this.piece) : this.blackPieces.add(this.piece)
         return this.piece; 
     }
 
     setTurnText(turn) {
-        // if white (player1)
         console.log('setting Turn Text', turn)
         let text = turn ? 'YOUR TURN' : "OPPONENT'S TURN"
         if (this.textTurn) {
             this.textTurn.destroy() 
 
         }
-        this.textTurn = this.add.text(850, 400, text, this.textConfig)
+        this.textTurn = this.add.text(850, 400, text, infoTextConfig);
     }
 
     printBoard() {
