@@ -19,6 +19,7 @@ export default class Game extends Phaser.Scene {
         this.socket = data.socket;
         this.color = data.color; // true = player1 (white)
         this.turn = data.color // starts off as true (because player1 starts) -- represents whether it's user's turn
+        this.perlinBoard = data.perlinBoard
     }
 
     preload() {
@@ -294,11 +295,12 @@ export default class Game extends Phaser.Scene {
 // CREATING BOARD / PIECES 
     createBoard() {
         this.board = []; 
-        let perlinBoard = new Board(16, 16).getBoard();
-        this.terrain = perlinBoard
+        // let perlinBoard = new Board(16, 16).getBoard();
+        this.terrain = this.perlinBoard
         for (let i = 0; i < 16; i += 1) {
             this.board.push([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
         }
+        console.log(this.perlinBoard)
 
         let colors = [0xFFFFFF, 0xB75555]
         for (let i = 0; i < 16; i ++) {
@@ -306,7 +308,7 @@ export default class Game extends Phaser.Scene {
             let row = [] 
             for (let j = 0; j < 16; j++) {
             let color = colors[index]
-            let tile = perlinBoard[i][j]
+            let tile = this.perlinBoard[i][j]
             
             if (tile === "mountain") {
                 let sprite = this.add.image(25+i*50, 25+j*50, "ground")

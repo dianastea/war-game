@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import io from 'socket.io-client';
-
+import Board from '../helpers/board';
 
 class SceneMainMenu extends Phaser.Scene {
   constructor() {
@@ -11,7 +11,6 @@ class SceneMainMenu extends Phaser.Scene {
     // eslint-disable-next-line no-undef
     this.color = false; // this.color ? player is white : player is black 
     this.gameRequested = false; // refers to whether a player has requested to start the game 
-
 
     // SETS START GAME TEXT
     this.startGame = this.add.text(
@@ -40,7 +39,9 @@ class SceneMainMenu extends Phaser.Scene {
         this.socket.emit('startingGame')
       } else {
         // This is the second player requesting a game 
-        this.socket.emit('playerJoined')
+        let perlinBoard = new Board(16, 16).getBoard(); 
+        console.log('the board', perlinBoard)
+        this.socket.emit('playerJoined', perlinBoard)
       }
       
     });
@@ -70,8 +71,9 @@ class SceneMainMenu extends Phaser.Scene {
     })
 
     // officially starts the game for both players 
-    this.socket.on('startGame', () => {
-      this.scene.start('SceneGame', { socket: this.socket, color: this.color });
+    this.socket.on('startGame', function (perlinBoard) {
+      console.log('board', perlinBoard)
+      self.scene.start('SceneGame', { socket: self.socket, color: self.color, perlinBoard: perlinBoard });
     })
 
 
