@@ -1,4 +1,4 @@
-# phaser-pawn-game
+# war-game
 
 ##### Multiplayer strategy board game developed with Phaser3, Node.js, and Socket.io. 
 
