@@ -9,7 +9,6 @@ io.on('connection', function (socket) {
     console.log('players', players)
     players.push(socket.id);
 
-
     /* CHANGING TURNS 
     * Current player emits signal to server -> opponent accepts signal and starts it's turn 
     */
@@ -20,8 +19,16 @@ io.on('connection', function (socket) {
     /* OPPONENT PIECE IS KILLED 
         * Request emitted from current player -> server -> back to both sockets
         * enemy socket takes request and removes the destroyed piece from the board */
+    socket.on('damage', function (color, v, h, dmg) {
+        io.emit('damage', color, v, h, dmg)
+    })
+
     socket.on('destroy', function (color, v, h) {
         io.emit('destroy', color, v, h)
+    })
+    
+    socket.on('setVisible', function (row, col) {
+        io.emit('setVisible', row, col)
     })
 
     /* PLAYER DISCONNECTS (refreshing or closing tab) */

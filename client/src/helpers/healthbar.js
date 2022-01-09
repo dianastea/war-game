@@ -3,7 +3,7 @@ export default class HealthBar {
     constructor (scene, x, y)
     {
         this.bar = new Phaser.GameObjects.Graphics(scene);
-
+        // super(scene, x-25, y+25, x + ' ' + y)
         this.x = x-25;
         this.y = y+25;
         this.value = 100;

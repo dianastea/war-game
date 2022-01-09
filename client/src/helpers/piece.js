@@ -1,13 +1,12 @@
 import Phaser from 'phaser'; 
-
 export default class Piece extends Phaser.GameObjects.Sprite {  
     constructor(scene, x, y, key, type, color, healthbar) {
         super(scene, x, y, key)
         this.scene = scene 
         this.strength = 2
         this.health = 2
-        this.attack_radius = 1
         this.healthbar = healthbar
+        this.attack_radius = 1
 
         this.scene.add.existing(this)
         this.setData({'type': type, 'color': color, 'row': 0, 'col': 0, 'healthbar' : healthbar})
@@ -24,15 +23,20 @@ export default class Piece extends Phaser.GameObjects.Sprite {
 
     attack(move) {
         let [vr, vc, victim] = move.slice(1, 4)
+        console.log('victim health', victim.health, victim.getData('type'))
         victim.health -= 1
         let dmg = 1
-        
-        if (victim.health == 0) {
+        console.log('victim health', victim.health)
+        if (victim.health <= 0) {
+            console.log(victim, 'true - destroyed!')
+            console.log(vr, vc, this.scene.board[vr][vc])
             this.scene.board[vr][vc] = 0
-            victim.healthbar.bar.destroy();
-            victim.destroy();
-           
-            this.scene.socket.emit('destroy', this.scene.color, vr, vc)
+
+            let [socket, color] = [this.scene.socket, this.scene.color]
+            victim.destroyed();
+        
+            socket.emit('destroy', color, vr, vc)
+            
         }
         else {
             victim.healthbar.decrease(dmg*50);
@@ -41,20 +45,25 @@ export default class Piece extends Phaser.GameObjects.Sprite {
         }
         
     }
-
+    
+    destroyed() {
+        this.healthbar.bar.destroy()
+        this.destroy()
+    }
 
     attackMoves() {
-        let moves = [] 
-        let [r, c] = [this.getData('row'), this.getData('col')]
-        for (let r_dir = -1; r_dir < 2; r_dir++) {
-            for (let c_dir = -1; c_dir < 2; c_dir ++) {
-                if (this.inBounds(r+r_dir, c+c_dir)) {
-                    let victim = this.scene.board[r + r_dir][c + c_dir]
-                    if (victim != 0 && victim.getData('color') != this.getData('color')) {
-                        moves.push(['attack', r+r_dir, c+c_dir, victim])
+        let moves = []  
+        let [r,c] = [this.getData('row'), this.getData('col')]
+        console.log('in attack moves - r, c:', r, c, this.attack_radius)
+        for (let i = r - this.attack_radius; i <= r + this.attack_radius; i++) {
+            for (let j = c - this.attack_radius; j <= c + this.attack_radius; j++) {
+                if (this.inBounds(i, j)) {
+                    let victim = this.scene.board[i][j]
+                    if (victim != 0 && victim.getData('color') != this.getData('color') && !this.getData('type').includes('Spy')) {
+                        console.log(victim, i, j)
+                        moves.push(['attack', i, j, this.scene.board[i][j]])
                     }
                 }
-                
             }
         }
         return moves
@@ -119,8 +128,8 @@ export default class Piece extends Phaser.GameObjects.Sprite {
      */
 
     doApm() {
-        if (this.getData('type').includes("Rook")) {
-            this.moves = [];
+        this.moves = [];
+        if (this.getData('type').includes("King")) {
             //[possibleX, possibleY], max_travel_distance
             this.getApm([1,0], 3);
             this.getApm([-1,0], 3);
@@ -133,7 +142,6 @@ export default class Piece extends Phaser.GameObjects.Sprite {
             // console.log(row, col)
             // console.log(this.moves);
         } else if (this.getData('type').includes("Pawn")) {
-            this.moves = [];
             //[possibleX, possibleY], max_travel_distance
             this.getApm([1,0], 1);
             this.getApm([-1,0], 1);
@@ -141,8 +149,7 @@ export default class Piece extends Phaser.GameObjects.Sprite {
             this.getApm([0,-1], 1);
             // console.log(row, col)
             // console.log(this.moves);
-        } else if (this.getData('type').includes("Queen") || true) {
-            this.moves = [];
+        } else if (this.getData('type').includes("Queen")) {
             //[possibleX, possibleY], max_travel_distance
             this.getApm([1,0], 1);
             this.getApm([-1,0], 1);
@@ -150,6 +157,17 @@ export default class Piece extends Phaser.GameObjects.Sprite {
             this.getApm([0,-1], 1);
             // console.log(row, col)
             // console.log(this.moves);    
+        } else if (this.getData('type').includes("Sniper")) {
+            [1, -1].forEach((x) => {
+                [1, -1].forEach((y) => {
+                    this.getApm([x, y], 1)
+                })
+            })
+        } else if (this.getData('type').includes("Spy")) {
+            this.getApm([1,0], 2);
+            this.getApm([-1,0], 2);
+            this.getApm([0,1], 2);
+            this.getApm([0,-1], 2);
         }
 
         return this.moves

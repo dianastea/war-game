@@ -1,6 +1,9 @@
 import Soldier from '../helpers/pieces/soldier';
-import Scout from '../helpers/pieces/scout';
+import King from '../helpers/pieces/king';
 import Queen from '../helpers/pieces/queen';
+import Sniper from '../helpers/pieces/sniper';
+import Spy from '../helpers/pieces/spy';
+import Cannon from '../helpers/pieces/cannon';
 import HealthBar from '../helpers/healthbar'
 
 // need to add color functionality 
@@ -20,10 +23,16 @@ export default class Game extends Phaser.Scene {
     preload() {
         this.load.image('whitePawn', 'src/assets/whitePawn.png');
         this.load.image('blackPawn', 'src/assets/blackPawn.png');
-        this.load.image('whiteRook', 'src/assets/whiteRook.png');
-        this.load.image('blackRook', 'src/assets/blackRook.png');
+        this.load.image('whiteKing', 'src/assets/whiteRook.png');
+        this.load.image('blackKing', 'src/assets/blackRook.png');
         this.load.image('whiteQueen', 'src/assets/whiteQueen.png');
         this.load.image('blackQueen', 'src/assets/blackQueen.png');
+        this.load.image('blackSniper', 'src/assets/blackSniper.png');
+        this.load.image('whiteSpy', 'src/assets/whiteSpy.png');
+        this.load.image('blackSpy', 'src/assets/blackSpy.png');
+        this.load.image('blackSpy', 'src/assets/blackSpy.png');
+        this.load.image('whiteCannon', 'src/assets/whiteCannon.png');
+        this.load.image('blackCannon', 'src/assets/blackCannon.png');
     }
 
     create() {
@@ -53,6 +62,7 @@ export default class Game extends Phaser.Scene {
 
         this.socket.on('destroy', function (color, v, h) {
             if (color != self.color) {
+                console.log('self destroy')
                 self.selfDestroy(v, h)
             }
         })
@@ -63,6 +73,12 @@ export default class Game extends Phaser.Scene {
             }
         })
 
+        this.socket.on('setVisible', function (row, col) {
+            let piece = self.board[row][col]
+            piece.setVisible(true)
+            piece.healthbar.bar.setVisible(true)
+        })
+
     }
 
     update() {
@@ -70,14 +86,15 @@ export default class Game extends Phaser.Scene {
     }
 
     attackPiece(move, piece) {
+        let coor = [piece.getData('row'), piece.getData('col')]
         piece.attack(move)
         // this.destroyGhosts(); 
         // this.printBoard(); 
         // this.disableInteractiveness(); 
         // this.turn = false; 
 
-        let coor = [piece.getData('row'), piece.getData('col')]
         // this.socket.emit('change', this.color, [r, c], [r, c])
+        console.log('finishing turn')
         this.finishTurn(coor, coor)
     }
 
@@ -105,6 +122,7 @@ export default class Game extends Phaser.Scene {
     }
 
     finishTurn(old_coor, new_coor) {
+        console.log(this, old_coor, new_coor)
         this.destroyGhosts(); 
         this.printBoard(); 
         this.disableInteractiveness(); 
@@ -127,24 +145,34 @@ export default class Game extends Phaser.Scene {
 
     selfDamage(v, h, dmg) {
         let piece = this.board[v][h]
+        // piece.health -= 1 
+        // console.log(piece.getData('type'), 'health', piece.health)
+        // console.log('health', piece.health)
+        piece.health -= 1
         piece.getData('healthbar').decrease(dmg*50)
         
     }
 
     opponentMove(vh, nvh) {
+        console.log('opponent move', this, vh, nvh)
+        let self = this; 
         // board[v][h] 
         let v = vh[0]
         let h = vh[1]
         let nv = nvh[0]
         let nh = nvh[1]
-        const piece = this.board[v][h]
+
+        const piece = self.board[v][h]
         this.board[v][h] = 0
         this.board[nv][nh] = piece 
-        piece.updatePosition(nv, nh)
-        piece.getData('healthbar').setX(nh*50)
-        piece.getData('healthbar').setY(45 + nv * 50)
-        piece.getData('healthbar').draw()
-        console.log(piece)
+        if (piece != 0) {
+            piece.updatePosition(nv, nh)
+            piece.getData('healthbar').setX(nh*50)
+            piece.getData('healthbar').setY(45 + nv * 50)
+            piece.getData('healthbar').draw()
+            console.log(piece)
+        }
+        
 
     }
 
@@ -158,23 +186,24 @@ export default class Game extends Phaser.Scene {
             if (piece.possibleMoves(false).length > 0) {
                 piece.setInteractive(); 
 
+                let old_scale = piece.scale 
                 piece.on('pointerover', () => {
-                    piece.setScale(0.10);
+                    piece.setScale(piece.scale * 1.1);
                 });
           
                 piece.on('pointerout', () => {
-                    piece.setScale(0.08);
+                    piece.setScale(old_scale);
                 })
 
 
                 piece.on('pointerdown', () => {
-                    console.log('pointerdown')
                     let pm = piece.possibleMoves(true)
                     let am = piece.attackMoves() 
                     console.log('pm', pm, 'am', am)
+                    console.log('attack r', piece.attack_radius)
                     this.destroyGhosts()
                     for (let i = 0; i < pm.length; i += 1) {
-                        const ghost = this.add.image(25+pm[i][1]*50, 25+pm[i][0]*50, piece.getData('type')).setScale(0.08).setAlpha(0.5)
+                        const ghost = this.add.image(25+pm[i][1]*50, 25+pm[i][0]*50, piece.getData('type')).setScale(old_scale).setAlpha(0.5)
                         ghost.setInteractive(); 
 
                         ghost.on('pointerup', () => {
@@ -231,11 +260,14 @@ export default class Game extends Phaser.Scene {
     for (let i = 0; i < 8; i += 1) {
         // board[h][v]
         this.board[0][i] = this.createPiece(0, i, true, Soldier)
-        this.board[1][i] = this.createPiece(1, i, true, Scout)
-        this.board[14][i] = this.createPiece(14, i, false, Scout)
+        this.board[1][i] = this.createPiece(1, i, true, King)
+        this.board[14][i] = this.createPiece(14, i, false, King)
         this.board[15][i] = this.createPiece(15, i, false, Soldier)
     }
     this.board[13][0] = this.createPiece(13, 0, false, Queen)
+    this.board[13][1] = this.createPiece(13, 1, false, Sniper)
+    this.board[13][2] = this.createPiece(13, 2, false, Spy)
+    this.board[2][2] = this.createPiece(2, 2, true, Cannon)
 
     this.textConfig = {
         color: 'white',
@@ -271,7 +303,7 @@ export default class Game extends Phaser.Scene {
         let color = white ? 'white' : 'black'
         let healthbar = new HealthBar(this, 25+col*50, 20 + row*50)
         this.piece = new type(this, 25+col*50, 25+row*50, color, color, healthbar)
-        this.piece.setScale(0.08)
+        console.log(this.piece)
         this.piece.updatePosition(row, col)
 
         white ? this.whitePieces.add(this.piece) : this.blackPieces.add(this.piece)
@@ -290,7 +322,7 @@ export default class Game extends Phaser.Scene {
     }
 
     printBoard() {
-        const translation = {'whitePawn': 'wP', 'blackPawn': 'bP', 'whiteRook': 'wR', 'blackRook': 'bR', 'blackQueen': 'bQ'}
+        const translation = {'whitePawn': 'wP', 'blackPawn': 'bP', 'whiteKing': 'wK', 'blackKing': 'bK', 'blackQueen': 'bQ'}
 
         for (let row = 0; row < 16; row ++) {
             let str = ''
