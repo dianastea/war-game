@@ -37,7 +37,8 @@ export default class Game extends Phaser.Scene {
 
     create() {
         this.whitePieces = this.add.group();
-        this.blackPieces = this.add.group(); 
+        this.blackPieces = this.add.group();
+        this.cannons = []  
         this.board = this.createBoard(); 
         this.ghosts = [] // refers to the ghost pieces that appear when user clicks on piece to see possible movement options
         
@@ -148,6 +149,7 @@ export default class Game extends Phaser.Scene {
         // piece.health -= 1 
         // console.log(piece.getData('type'), 'health', piece.health)
         // console.log('health', piece.health)
+        console.log('selfdamage', v, h)
         piece.health -= 1
         piece.getData('healthbar').decrease(dmg*50)
         
@@ -180,7 +182,9 @@ export default class Game extends Phaser.Scene {
         this.printBoard() 
         this.setTurnText(true)
 
-        this.group = this.color ? this.whitePieces : this.blackPieces  
+        this.group = this.color ? this.whitePieces : this.blackPieces
+        
+        this.cannonsFire()
         this.group.getChildren().forEach((piece) => {
 
             if (piece.possibleMoves(false).length > 0) {
@@ -237,6 +241,15 @@ export default class Game extends Phaser.Scene {
         })
     }
 
+    cannonsFire() {
+        this.group = this.color ? this.whitePieces : this.blackPieces
+        this.group.getChildren().forEach((piece) => {
+            if (piece.getData('type').includes('Cannon')) {
+                piece.fire(); 
+            }
+        })
+    }
+
 // CREATING BOARD / PIECES 
     createBoard() {
         this.board = []; 
@@ -267,7 +280,8 @@ export default class Game extends Phaser.Scene {
     this.board[13][0] = this.createPiece(13, 0, false, Queen)
     this.board[13][1] = this.createPiece(13, 1, false, Sniper)
     this.board[13][2] = this.createPiece(13, 2, false, Spy)
-    this.board[2][2] = this.createPiece(2, 2, true, Cannon)
+    this.board[8][2] = this.createPiece(8, 2, true, Cannon)
+    this.cannons.push(this.board[8][2]) 
 
     this.textConfig = {
         color: 'white',
