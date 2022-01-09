@@ -54,15 +54,15 @@ export default class Game extends Phaser.Scene {
             this.disableInteractiveness(); 
         }
 
-        let self = this; 
+        // let self = this; 
         
         // response to changing turns 
-        this.socket.on('change', function (color, vh, nvh) {
-            if (color != self.color) {
+        this.socket.on('change', (color, vh, nvh) => {
+            if (color != this.color) {
                 // console.log('changing turns!', vh[0], vh[1], nvh[0], nvh[1])
-                self.opponentMove(vh, nvh)
-                self.turn = true; 
-                self.setInteractiveness(); 
+                this.opponentMove(vh, nvh)
+                this.turn = true; 
+                this.setInteractiveness(); 
             }
             
         })
@@ -71,16 +71,16 @@ export default class Game extends Phaser.Scene {
         * Destroys character from player's own team (after being killed on the opponent's turn)
         * @param {boolean} color - represents color of the killer's team (false for black, true for white)
         */
-        this.socket.on('destroy', function (color, v, h) {
-            if (color != self.color) {
+        this.socket.on('destroy', (color, v, h) => {
+            if (color != this.color) {
                 console.log('self destroy')
-                self.selfDestroy(v, h)
+                this.selfDestroy(v, h)
             }
         })
 
-        this.socket.on('damage', function (color, v, h, dmg) {
-            if (color != self.color) {
-                self.selfDamage(v, h, dmg)
+        this.socket.on('damage', (color, v, h, dmg) => {
+            if (color != this.color) {
+                this.selfDamage(v, h, dmg)
             }
         })
 
@@ -89,8 +89,8 @@ export default class Game extends Phaser.Scene {
          * @param row/col - dimensions of the revealed player 
         */
         
-        this.socket.on('setVisible', function (row, col) {
-            let piece = self.board[row][col]
+        this.socket.on('setVisible', (row, col) => {
+            let piece = this.board[row][col]
             piece.setVisible(true)
             piece.healthbar.bar.setVisible(true)
         })

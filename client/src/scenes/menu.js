@@ -29,7 +29,7 @@ class SceneMainMenu extends Phaser.Scene {
     this.socket = io('http://localhost:3000'); 
     let self = this // because after the "this.socket.on" methods, "this" starts to refer to the *socket* 
 
-    this.socket.on('connect', function () {
+    this.socket.on('connect', () => {
         console.log('Connected!');
     });    
 
@@ -47,16 +47,16 @@ class SceneMainMenu extends Phaser.Scene {
     });
     
     // response to a player requesting to start the game 
-    this.socket.on('starting', function (id) { 
-      self.gameRequested = true 
-      if (self.socket.id == id) { // for the player who requested to start. . . 
-        self.color = true // sets this player to be Player 1 (White)
+    this.socket.on('starting',  (id) => { 
+      this.gameRequested = true 
+      if (this.socket.id == id) { // for the player who requested to start. . . 
+        this.color = true // sets this player to be Player 1 (White)
         
         // add new text to show "Waiting for Opponent"
-        self.startGame.destroy() 
-        self.startGame = self.add.text(
-          self.game.config.width * 0.2,
-          self.game.config.height * 0.2,
+        this.startGame.destroy() 
+        this.startGame = self.add.text(
+          this.game.config.width * 0.2,
+          this.game.config.height * 0.2,
           'Waiting for opponent', {
             color: '#d0c600',
             fontFamily: 'sans-serif',
@@ -71,9 +71,8 @@ class SceneMainMenu extends Phaser.Scene {
     })
 
     // officially starts the game for both players 
-    this.socket.on('startGame', function (perlinBoard) {
-      console.log('board', perlinBoard)
-      self.scene.start('SceneGame', { socket: self.socket, color: self.color, perlinBoard: perlinBoard });
+    this.socket.on('startGame', (perlinBoard) => {
+      this.scene.start('SceneGame', { socket: this.socket, color: this.color, perlinBoard: perlinBoard });
     })
 
 
