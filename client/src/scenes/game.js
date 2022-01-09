@@ -5,6 +5,7 @@ import Sniper from '../helpers/pieces/sniper';
 import Spy from '../helpers/pieces/spy';
 import Cannon from '../helpers/pieces/cannon';
 import HealthBar from '../helpers/healthbar'
+import Board from '../helpers/board';
 
 // need to add color functionality 
 export default class Game extends Phaser.Scene {
@@ -33,6 +34,10 @@ export default class Game extends Phaser.Scene {
         this.load.image('blackSpy', 'src/assets/blackSpy.png');
         this.load.image('whiteCannon', 'src/assets/whiteCannon.png');
         this.load.image('blackCannon', 'src/assets/blackCannon.png');
+        this.load.image('mountain', 'src/assets/mountain.png');
+        this.load.image('water', 'src/assets/water.png');
+        this.load.image('ground', 'src/assets/ground.png');
+
     }
 
     create() {
@@ -289,7 +294,8 @@ export default class Game extends Phaser.Scene {
 // CREATING BOARD / PIECES 
     createBoard() {
         this.board = []; 
-
+        let perlinBoard = new Board(16, 16).getBoard();
+        this.terrain = perlinBoard
         for (let i = 0; i < 16; i += 1) {
             this.board.push([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
         }
@@ -300,8 +306,16 @@ export default class Game extends Phaser.Scene {
             let row = [] 
             for (let j = 0; j < 16; j++) {
             let color = colors[index]
+            let tile = perlinBoard[i][j]
             
-            row.push(this.add.rectangle(25+i*50, 25+j*50, 50, 50, color))
+            if (tile === "mountain") {
+                let sprite = this.add.image(25+i*50, 25+j*50, "ground")
+                sprite.setScale(1.04166667);
+            }
+            let sprite1 = this.add.image(25+i*50, 25+j*50, tile)
+            sprite1.setScale(1.04166667);
+            row.push(sprite1)
+            
             index = Math.abs(index - 1)
             }
     }
