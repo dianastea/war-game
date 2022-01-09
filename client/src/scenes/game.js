@@ -5,6 +5,7 @@ import Sniper from '../helpers/pieces/sniper';
 import Spy from '../helpers/pieces/spy';
 import Cannon from '../helpers/pieces/cannon';
 import HealthBar from '../helpers/healthbar'
+import Gem from '../helpers/pieces/gem';
 import { infoTextConfig, BASE_ASSET_PATH, SPRITE_WIDTH, SPRITE_HEIGHT } from "../config";
 
 // need to add color functionality 
@@ -13,8 +14,6 @@ export default class Game extends Phaser.Scene {
         super({
             key: 'SceneGame'
         });
-        this.whiteSoldiers = [];
-        this.blackSoldiers = [];
     }
 
     init(data) {
@@ -22,8 +21,6 @@ export default class Game extends Phaser.Scene {
         this.color = data.color; // true = player1 (white)
         this.turn = data.color // starts off as true (because player1 starts) -- represents whether it's user's turn
     }
-
-    
 
     /**
      * @description Loads sprite from spritesheet given asset path 
@@ -40,6 +37,8 @@ export default class Game extends Phaser.Scene {
     }
 
     preload() {
+        this.loadSprite('whiteGem', 'gem-sheet.png', 32, 32);
+        this.loadSprite('blackGem', 'gem-sheet.png', 32, 32);
         this.loadSprite('whitePawn', 'soldier-sheet.png');
         this.loadSprite('blackPawn', 'soldier-sheet.png');
         this.loadSprite('whiteKing', 'king-sheet.png');
@@ -53,9 +52,34 @@ export default class Game extends Phaser.Scene {
         this.loadSprite('blackCannon', 'cannon-sheet.png');
     }
 
+    /**
+     * @description Creates an idle animation for given sprite using spritesheet 
+     * @param {string} key Animation key 
+     * @param {string} type Sprite type 
+     * @param {number} startFrame Frame to start animating from in spritesheet 
+     * @param {number} endFrame Frame to start end animation from in spritesheet
+     */
+    createIdleAnimation(key, type, startFrame, endFrame, frameRate) {
+        this.anims.create({
+            key: key,
+            frames: this.anims.generateFrameNumbers(type, {start: startFrame, end: endFrame}),
+            frameRate: frameRate ? frameRate : 10,
+            repeat: -1
+        });
+    }
+
     create() {
+        this.whiteSoldiers = this.add.group();
+        this.blackSoldiers = this.add.group();
+        this.whiteSpys = this.add.group();
+        this.blackSpys = this.add.group();
+        this.whiteKings = this.add.group();
+        this.blackKings = this.add.group();
+
         this.whitePieces = this.add.group();
         this.blackPieces = this.add.group();
+        this.gems = this.add.group();
+
         this.cannons = []  
         this.board = this.createBoard(); 
         this.ghosts = [] // refers to the ghost pieces that appear when user clicks on piece to see possible movement options
@@ -66,28 +90,19 @@ export default class Game extends Phaser.Scene {
             this.disableInteractiveness(); 
         }
 
-        // Might need a more robust way of setting this up
-        this.anims.create({
-            key: 'idleWhitePawn',
-            frames: this.anims.generateFrameNames('whitePawn', { start: 0, end: 3 }),
-            frameRate: 10,
-            repeat: -1
-        });
+        // Create Animations
+        this.createIdleAnimation('idleWhiteSoldier', 'whitePawn', 0, 3);        
+        this.createIdleAnimation('idleBlackSoldier', 'blackPawn', 0, 3);
+        this.createIdleAnimation('idleWhiteKing', 'whiteKing', 0, 3);
+        this.createIdleAnimation('idleBlackKing', 'blackKing', 0, 3);
+        this.createIdleAnimation('idleGem', 'whiteGem', 0, 6);
 
-        this.anims.create({
-            key: 'idleBlackPawn',
-            frames: this.anims.generateFrameNames('blackPawn', { start: 0, end: 3 }),
-            frameRate: 10,
-            repeat: -1
-        });
-
-        this.whiteSoldiers.forEach((soldier) => {
-            soldier.anims.play('idleWhitePawn', true);
-        });
-
-        this.blackSoldiers.forEach((soldier) => {
-            soldier.anims.play('idleBlackPawn', true);
-        });
+        // Start Animations
+        this.whiteSoldiers.playAnimation('idleWhiteSoldier');
+        this.blackSoldiers.playAnimation('idleBlackSoldier');
+        this.whiteKings.playAnimation('idleWhiteKing');
+        this.blackKings.playAnimation('idleBlackKing');
+        this.gems.playAnimation('idleGem');
         
         let self = this; 
         
@@ -119,7 +134,11 @@ export default class Game extends Phaser.Scene {
             let piece = self.board[row][col]
             piece.setVisible(true)
             piece.healthbar.bar.setVisible(true)
-        })
+        });
+
+        this.socket.on('enemyWin', () => {
+            this.add.text(850, 400, "Oponent Wins", infoTextConfig); 
+        });
 
     }
 
@@ -128,7 +147,14 @@ export default class Game extends Phaser.Scene {
 
     attackPiece(move, piece) {
         let coor = [piece.getData('row'), piece.getData('col')]
-        piece.attack(move)
+
+        if(move[3] instanceof Gem) {
+            move[3].show(); // We know move[3] is a gem so we use the gem specific method
+        }
+
+        piece.attack(move);
+
+
         // this.destroyGhosts(); 
         // this.printBoard(); 
         // this.disableInteractiveness(); 
@@ -175,8 +201,8 @@ export default class Game extends Phaser.Scene {
     selfDestroy(v, h) {
         console.log('in the self destroy', this.board[v][h])
         let piece = this.board[v][h]
-        piece.getData('healthbar').bar.destroy()
-        piece.destroy() 
+        piece.getData('healthbar').bar.destroy();
+        piece.destroy(); 
         if (this.whitePieces.children.size == 0 || this.blackPieces.children.size == 0) {
             console.log('game over')
         }
@@ -238,7 +264,6 @@ export default class Game extends Phaser.Scene {
                 piece.on('pointerout', () => {
                     piece.setScale(old_scale);
                 })
-
 
                 piece.on('pointerdown', () => {
                     let pm = piece.possibleMoves(true)
@@ -317,14 +342,22 @@ export default class Game extends Phaser.Scene {
         this.board[14][i] = this.createPiece(14, i, false, King);
         this.board[15][i] = this.createPiece(15, i, false, Soldier);
 
-        this.whiteSoldiers.push(this.board[0][i]);
-        this.blackSoldiers.push(this.board[15][i]);
+        this.whiteSoldiers.add(this.board[0][i]);
+        this.blackSoldiers.add(this.board[15][i]);
+        this.whiteKings.add(this.board[1][i]);
+        this.blackKings.add(this.board[14][i]);
     }
     this.board[13][0] = this.createPiece(13, 0, false, Queen);
     this.board[13][1] = this.createPiece(13, 1, false, Sniper);
     this.board[13][2] = this.createPiece(13, 2, false, Spy);
     this.board[8][2] = this.createPiece(8, 2, true, Cannon);
-    this.cannons.push(this.board[8][2]) 
+    this.board[9][4] = this.createPiece(9, 4, true, Gem);
+    this.board[8][3] = this.createPiece(8, 3, false, Gem);
+
+    this.gems.add(this.board[9][4]);
+    this.gems.add(this.board[8][3]);
+
+    this.cannons.push(this.board[8][2]); 
 
     let p1 = this.color ? ' (You)' : ''
     let p2 = this.color ? '' : ' (You)'
