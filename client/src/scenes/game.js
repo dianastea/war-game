@@ -172,7 +172,7 @@ export default class Game extends Phaser.Scene {
             console.log('game over')
         }
         
-        this.board[v][h] = 0 
+        this.board[row][col] = 0 
     }
 
     selfDamage(v, h, dmg) {
