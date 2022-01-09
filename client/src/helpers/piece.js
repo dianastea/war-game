@@ -107,7 +107,7 @@ export default class Piece extends Phaser.GameObjects.Sprite {
             if(boardSquare != 0) {
                 return 
             }
-            if (boardSquare == 0 || s == visited[0]) {
+            if ((boardSquare == 0 || s == visited[0]) && this.scene.terrain[s[1] + dir[1]][s[0] + dir[0]] === "ground") {
                 
                 visited.push(s)
                 this.moves.push([s[0] + dir[0], s[1] + dir[1], 'normal'])
