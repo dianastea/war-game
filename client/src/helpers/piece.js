@@ -36,7 +36,7 @@ export default class Piece extends Phaser.GameObjects.Sprite {
             victim.destroyed();
         
             socket.emit('destroy', color, vr, vc)
-            
+
         }
         else {
             victim.healthbar.decrease(dmg*50);

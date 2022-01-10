@@ -21,7 +21,7 @@ export default class Cannon extends Piece {
         if (this.turns_to_shoot == 0) {
             console.log("fire!")
             this.attackMoves().forEach((move) => {
-                this.attack(move)
+                this.attack(move);
             })
             this.turns_to_shoot = 2
         } else {

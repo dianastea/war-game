@@ -39,17 +39,17 @@ export default class Game extends Phaser.Scene {
     preload() {
         this.loadSprite('whiteGem', 'gem-sheet.png', 32, 32);
         this.loadSprite('blackGem', 'gem-sheet.png', 32, 32);
-        this.loadSprite('whitePawn', 'soldier-sheet.png');
-        this.loadSprite('blackPawn', 'soldier-sheet.png');
-        this.loadSprite('whiteKing', 'king-sheet.png');
-        this.loadSprite('blackKing', 'king-sheet.png');
-        this.loadSprite('whiteQueen', 'queen-sheet.png');
-        this.loadSprite('blackQueen', 'queen-sheet.png');
-        this.loadSprite('blackSniper', 'sniper-sheet.png');
-        this.loadSprite('whiteSpy', 'spy-sheet.png');
-        this.loadSprite('blackSpy', 'spy-sheet.png');
-        this.loadSprite('whiteCannon', 'cannon-sheet.png');
-        this.loadSprite('blackCannon', 'cannon-sheet.png');
+        this.loadSprite('whitePawn', 'soldier-white-sheet.png');
+        this.loadSprite('blackPawn', 'soldier-black-sheet.png');
+        this.loadSprite('whiteKing', 'king-white-sheet.png');
+        this.loadSprite('blackKing', 'king-black-sheet.png');
+        this.loadSprite('whiteQueen', 'queen-white-sheet.png');
+        this.loadSprite('blackQueen', 'queen-black-sheet.png');
+        this.loadSprite('blackSniper', 'sniper-black-sheet.png');
+        this.loadSprite('whiteSpy', 'spy-white-sheet.png');
+        this.loadSprite('blackSpy', 'spy-black-sheet.png');
+        this.loadSprite('whiteCannon', 'cannon-white-sheet.png');
+        this.loadSprite('blackCannon', 'cannon-black-sheet.png');
     }
 
     /**
@@ -71,6 +71,7 @@ export default class Game extends Phaser.Scene {
     create() {
         this.whiteSoldiers = this.add.group();
         this.blackSoldiers = this.add.group();
+
         this.whiteSpys = this.add.group();
         this.blackSpys = this.add.group();
         this.whiteKings = this.add.group();
@@ -80,7 +81,7 @@ export default class Game extends Phaser.Scene {
         this.blackPieces = this.add.group();
         this.gems = this.add.group();
 
-        this.cannons = []  
+        this.cannons = this.add.group(); 
         this.board = this.createBoard(); 
         this.ghosts = [] // refers to the ghost pieces that appear when user clicks on piece to see possible movement options
         
@@ -95,6 +96,7 @@ export default class Game extends Phaser.Scene {
         this.createIdleAnimation('idleBlackSoldier', 'blackPawn', 0, 3);
         this.createIdleAnimation('idleWhiteKing', 'whiteKing', 0, 3);
         this.createIdleAnimation('idleBlackKing', 'blackKing', 0, 3);
+        this.createIdleAnimation('idleWhiteCannon', 'whiteCannon',0, 3);
         this.createIdleAnimation('idleGem', 'whiteGem', 0, 6);
 
         // Start Animations
@@ -102,12 +104,13 @@ export default class Game extends Phaser.Scene {
         this.blackSoldiers.playAnimation('idleBlackSoldier');
         this.whiteKings.playAnimation('idleWhiteKing');
         this.blackKings.playAnimation('idleBlackKing');
+        this.cannons.playAnimation('idleWhiteCannon');
         this.gems.playAnimation('idleGem');
         
         let self = this; 
         
         // response to changing turns 
-        this.socket.on('change', function (color, vh, nvh) {
+        this.socket.on('change', (color, vh, nvh) => {
             if (color != self.color) {
                 // console.log('changing turns!', vh[0], vh[1], nvh[0], nvh[1])
                 self.opponentMove(vh, nvh)
@@ -117,29 +120,33 @@ export default class Game extends Phaser.Scene {
             
         })
 
-        this.socket.on('destroy', function (color, v, h) {
+        this.socket.on('destroy', (color, v, h) => {
             if (color != self.color) {
                 console.log('self destroy')
                 self.selfDestroy(v, h)
             }
         })
 
-        this.socket.on('damage', function (color, v, h, dmg) {
+        this.socket.on('damage', (color, v, h, dmg) => {
             if (color != self.color) {
                 self.selfDamage(v, h, dmg)
             }
         })
 
-        this.socket.on('setVisible', function (row, col) {
+        this.socket.on('setVisible', (row, col) => {
             let piece = self.board[row][col]
             piece.setVisible(true)
             piece.healthbar.bar.setVisible(true)
         });
 
-        this.socket.on('enemyWin', () => {
-            this.add.text(850, 400, "Oponent Wins", infoTextConfig); 
-        });
+        this.socket.on('win', (color) => {
+            console.log("Win Condition Met!");
+            const endGameText = self.color === color ? 'Winner!!' : 'Better luck next time';
+            self.add.text(450,400,endGameText,infoTextConfig);
+            self.board = [];
 
+            // End Game Logic Here
+        });
     }
 
     update() {
@@ -147,20 +154,18 @@ export default class Game extends Phaser.Scene {
 
     attackPiece(move, piece) {
         let coor = [piece.getData('row'), piece.getData('col')]
+        const victim = move[3];
+        const isVictimAGem = victim instanceof Gem;
 
-        if(move[3] instanceof Gem) {
-            move[3].show(); // We know move[3] is a gem so we use the gem specific method
+        if(isVictimAGem) {
+            victim.show(); // We know move[3] is a gem so we use the gem specific method
         }
-
         piece.attack(move);
 
+        if(isVictimAGem && victim.health <= 0) {
+            this.socket.emit('win', this.color);
+        }
 
-        // this.destroyGhosts(); 
-        // this.printBoard(); 
-        // this.disableInteractiveness(); 
-        // this.turn = false; 
-
-        // this.socket.emit('change', this.color, [r, c], [r, c])
         console.log('finishing turn')
         this.finishTurn(coor, coor)
     }
@@ -357,7 +362,7 @@ export default class Game extends Phaser.Scene {
     this.gems.add(this.board[9][4]);
     this.gems.add(this.board[8][3]);
 
-    this.cannons.push(this.board[8][2]); 
+    this.cannons.add(this.board[8][2]); 
 
     let p1 = this.color ? ' (You)' : ''
     let p2 = this.color ? '' : ' (You)'
