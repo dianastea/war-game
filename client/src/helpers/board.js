@@ -58,7 +58,6 @@ export default class Board {
                 }
                 else if (perlinValue < 1.5 && perlinValue > -2.7) {
                     this.board[i][j] = "ground";
-                    
                 }
                 else if (perlinValue >= 1.5 && perlinValue < 2.5) {
                     this.board[i][j] = "ground";
@@ -66,7 +65,6 @@ export default class Board {
                 else if (perlinValue > 2.5) {
                     this.board[i][j] = "water";
                 }
-
                 if (j <= 2 || j >= 13) {
                     this.board[i][j] = "ground";
                 }
