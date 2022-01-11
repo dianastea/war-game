@@ -44,6 +44,63 @@ let perlin = {
 }
 perlin.seed();
 
+function getType(i, j, type, board) {
+    let neighbors = getNeighbors(board, i, j)
+    let locations = []
+    console.log(i,j, neighbors)
+    for(const [key, value] of Object.entries(neighbors)) {
+        if(value.includes(type)) {
+            locations.push(key)
+        }
+    }
+
+    //Midmountain
+    console.log(locations)
+    let a = locations;
+    let b = ['left', 'right', 'up', 'down']
+    if(Array.isArray(a) &&
+    Array.isArray(b) &&
+    a.length === b.length &&
+    a.every((val, index) => val === b[index])) {
+        return "mid" + type
+    }
+    else {
+        
+        var list1 = ["left", "right", "up", "down"], list2 = locations, dict2 = {};
+        list2.forEach(function(item) {
+            dict2[item] = true;
+        });
+
+        var result = list1.reduce(function(prev, current) {
+            if (dict2.hasOwnProperty(current) === false) {
+                prev.push(current);
+            }
+            return prev;
+        }, [])
+
+        return result.join('') + type
+    }
+
+}
+
+function getNeighbors(myArray, i, j) {
+    console.log(myArray)
+    
+    let up = myArray[i-1] === undefined ? undefined: myArray[i-1][j]
+    let down = myArray[i+1] === undefined ? undefined: myArray[i+1][j]
+    let neighborList = {"left": myArray[i][j-1], "right": myArray[i][j + 1] , "up": up, "down": down}
+    let returnList = {}
+    
+    for (const [key, value] of Object.entries(neighborList)) {
+        if(value !== undefined) {
+            returnList[key] = value
+        }
+        else{
+            returnList[key] = myArray[i][j]
+        }
+    }
+    return returnList;
+  }
 export default class Board {
 
     constructor(height, width) {
@@ -65,14 +122,36 @@ export default class Board {
                 else if (perlinValue > 2.5) {
                     this.board[i][j] = "water";
                 }
-                if (j <= 2 || j >= 13) {
+                if (i <= 2 || i >= 13) {
+                    this.board[i][j] = "ground";
+                }
+                if (j == 6) {
                     this.board[i][j] = "ground";
                 }
             }
         }
+
+        //Do specific location processing
+        for (let i = 0; i < 16; i += 1) {
+            for (let j = 0; j < 16; j+= 1) {
+                if(this.board[i][j] === "mountain") {
+                    this.board[i][j] = getType(i,j, "mountain", this.board)
+                }
+
+                else if(this.board[i][j] === "water") {
+                    this.board[i][j] = getType(i,j, "water", this.board)
+                }
+
+                else if(this.board[i][j] === "ground") {
+                    this.board[i][j] = getType(i,j, "ground", this.board)
+                }
+            }
+        }
+        
         console.log(this.board)
     }
     
+
     getBoard() {
         return this.board
     }
