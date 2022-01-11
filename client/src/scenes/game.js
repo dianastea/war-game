@@ -54,8 +54,58 @@ export default class Game extends Phaser.Scene {
         this.loadSprite('blackCannon', 'cannon-black-sheet.png');
         this.load.image('mountain', 'src/assets/mountain.png');
         this.load.image('water', 'src/assets/water.png');
+        this.load.image('downmountain', 'src/assets/floor_377.png');
+        this.load.image('upmountain', 'src/assets/floor_376.png');
+        this.load.image('rightmountain', 'src/assets/floor_378.png');
+        this.load.image('leftmountain', 'src/assets/floor_379.png');
+        this.load.image('leftupmountain', 'src/assets/floor_360.png');
+        this.load.image('rightupmountain', 'src/assets/floor_361.png');
+        this.load.image('leftdownmountain', 'src/assets/floor_363.png');
+        this.load.image('rightdownmountain', 'src/assets/floor_362.png');
+        this.load.image('leftrightupmountain', 'src/assets/floor_330.png');
+        this.load.image('leftrightdownmountain', 'src/assets/floor_330.png');
+        this.load.image('leftrightupdownmountain', 'src/assets/floor_330.png');
+        this.load.image('leftupdownmountain', 'src/assets/floor_330.png');
+        this.load.image('rightupdownmountain', 'src/assets/floor_330.png');
+        this.load.image('updownmountain', 'src/assets/floor_330.png');
+        this.load.image('leftrightmountain', 'src/assets/floor_330.png');
+        this.load.image('midmountain', 'src/assets/floor_318.png');
+        this.load.image('midground', 'src/assets/sprite_000.png');
+        this.load.image('midwater', 'src/assets/floor_222.png');
+        this.load.image('downwater', 'src/assets/floor_238.png');
+        this.load.image('upwater', 'src/assets/floor_206.png');
+        this.load.image('rightwater', 'src/assets/floor_223.png');
+        this.load.image('leftwater', 'src/assets/floor_221.png');
+        this.load.image('leftupwater', 'src/assets/floor_205.png');
+        this.load.image('rightupwater', 'src/assets/floor_207.png');
+        this.load.image('leftdownwater', 'src/assets/floor_237.png');
+        this.load.image('rightdownwater', 'src/assets/floor_239.png');
+        this.load.image('leftrightupdownwater', 'src/assets/floor_200.png');
+        this.load.image('leftrightupwater', 'src/assets/floor_204.png');
+        this.load.image('leftrightdownwater', 'src/assets/floor_236.png');
+        this.load.image('leftupdownwater', 'src/assets/floor_201.png');
+        this.load.image('rightupdownwater', 'src/assets/floor_203.png');
+        this.load.image('updownwater', 'src/assets/floor_202.png');
+        this.load.image('leftrightwater', 'src/assets/floor_220.png');
+        this.load.image('downground', 'src/assets/sprite_000.png');
+        this.load.image('upground', 'src/assets/sprite_000.png');
+        this.load.image('rightground', 'src/assets/sprite_000.png');
+        this.load.image('leftground', 'src/assets/sprite_000.png');
+        this.load.image('leftupground', 'src/assets/sprite_000.png');
+        this.load.image('rightupground', 'src/assets/sprite_000.png');
+        this.load.image('leftdownground', 'src/assets/sprite_000.png');
+        this.load.image('rightdownground', 'src/assets/sprite_000.png');
+        this.load.image('leftrightupground', 'src/assets/sprite_000.png');
+        this.load.image('leftrightdownground', 'src/assets/sprite_000.png');
+        this.load.image('leftrightupdownground', 'src/assets/sprite_000.png');
+        this.load.image('leftupdownground', 'src/assets/sprite_000.png');
+        this.load.image('rightupdownground', 'src/assets/sprite_000.png');
+        this.load.image('updownground', 'src/assets/sprite_000.png');
+        this.load.image('leftrightground', 'src/assets/sprite_000.png');
+        this.load.image('object1', 'src/assets/floor_374.png');
+        this.load.image('tent', 'src/assets/sprite_072.png');
         this.load.image('ground', 'src/assets/ground.png');
-    }
+    }   
 
     /**
      * @description Creates an idle animation for given sprite using spritesheet 
@@ -386,13 +436,28 @@ export default class Game extends Phaser.Scene {
             let row = [] 
             for (let j = 0; j < 16; j++) {
             let color = colors[index]
-            let tile = this.perlinBoard[i][j]
-            
-            if (tile === "mountain") {
-                let sprite = this.add.image(25+i*50, 25+j*50, "ground")
-                sprite.setScale(1.04166667);
-            }
+            let tile = this.perlinBoard[j][i]
+            let sprite = this.add.image(25+i*50, 25+j*50, "midground")
+            sprite.setScale(1.04166667);
             let sprite1 = this.add.image(25+i*50, 25+j*50, tile)
+            sprite1.setScale(1.04166667);
+            if(tile.includes("ground")) {
+                if (Math.random() > 0.9) {
+                    let sprite2 = this.add.image(25+i*50, 25+j*50, "object1")
+                    sprite2.setScale(.5);
+                }
+
+                else if (Math.random() > 0.8) {
+                    let sprite2 = this.add.image(25+i*50, 25+j*50, "mountain")
+                    sprite2.setScale(.5);
+                }
+
+                else if (Math.random() > 0.98) {
+                    let sprite2 = this.add.image(25+i*50, 25+j*50, "tent")
+                }
+                
+            }
+            
             sprite1.setScale(1.04166667);
             row.push(sprite1)
             
