@@ -49,11 +49,10 @@ io.on('connection', (socket) => {
     });
 
     /* SECOND PLAYER HITS 'START GAME' */
-    socket.on('playerJoined', () => {
+    socket.on('playerJoined', function (perlinBoard) {
         console.log('player joined')
-        io.emit('startGame')
+        io.emit('startGame', perlinBoard)
     });
-
 });
 
 http.listen(3000, () => {

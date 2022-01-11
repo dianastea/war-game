@@ -5,6 +5,7 @@ import Sniper from '../helpers/pieces/sniper';
 import Spy from '../helpers/pieces/spy';
 import Cannon from '../helpers/pieces/cannon';
 import HealthBar from '../helpers/healthbar'
+import Board from '../helpers/board';
 import Gem from '../helpers/pieces/gem';
 import { infoTextConfig, BASE_ASSET_PATH, SPRITE_WIDTH, SPRITE_HEIGHT } from "../config";
 
@@ -20,6 +21,7 @@ export default class Game extends Phaser.Scene {
         this.socket = data.socket;
         this.color = data.color; // true = player1 (white)
         this.turn = data.color // starts off as true (because player1 starts) -- represents whether it's user's turn
+        this.perlinBoard = data.perlinBoard
     }
 
     /**
@@ -113,17 +115,20 @@ export default class Game extends Phaser.Scene {
         this.socket.on('change', (color, vh, nvh) => {
             if (color != self.color) {
                 // console.log('changing turns!', vh[0], vh[1], nvh[0], nvh[1])
-                self.opponentMove(vh, nvh)
-                self.turn = true; 
-                self.setInteractiveness(); 
+                this.opponentMove(vh, nvh)
+                this.turn = true; 
+                this.setInteractiveness(); 
             }
-            
         })
 
+        /**
+        * Destroys character from player's own team (after being killed on the opponent's turn)
+        * @param {boolean} color - represents color of the killer's team (false for black, true for white)
+        */
         this.socket.on('destroy', (color, v, h) => {
-            if (color != self.color) {
+            if (color != this.color) {
                 console.log('self destroy')
-                self.selfDestroy(v, h)
+                this.selfDestroy(v, h)
             }
         })
 
@@ -133,8 +138,13 @@ export default class Game extends Phaser.Scene {
             }
         })
 
+        /** 
+         * Sets player visible after opponent revealed them. 
+         * @param row/col - dimensions of the revealed player 
+        */
+        
         this.socket.on('setVisible', (row, col) => {
-            let piece = self.board[row][col]
+            let piece = this.board[row][col]
             piece.setVisible(true)
             piece.healthbar.bar.setVisible(true)
         });
@@ -151,7 +161,26 @@ export default class Game extends Phaser.Scene {
 
     update() {
     }
+    /**
+     * HOW MOVING PIECES WORKS 
+     * @setInteractiveness - potential movements for the current player are calculated. 
+     *      when player clicks on a piece, they see the potential mvmts of that piece
+     *      when player clicks on a potential move, attackPiece() is triggered if it is 
+     *      an attacking move, and movePiece() is triggered otherwise. 
+     * @attackPiece -> piece.attack(move) in piece.js -> @finishTurn 
+     *     @attack in piece.js -> calculates/implements damage -> (victim.destroyed -> emit('destroy')) or emit('damage')
+     * @movePiece -> if player chooses to make a normal move -> moves the piece -> @finishTurn 
+     * @finishTurn -> destroys ghosts / disables interactiveness --> emit('change')
+    */ 
 
+
+
+    /**
+     * Attacks enemy player (initiated in @setInteractiveness 
+     *  when current player chooses an attack mvmt)
+     * @param {Array} move - ['attack', victim_row, victim_col, victim (object)]
+     * @param {Object} piece - the attacking piece 
+     */
     attackPiece(move, piece) {
         let coor = [piece.getData('row'), piece.getData('col')]
         const victim = move[3];
@@ -170,6 +199,11 @@ export default class Game extends Phaser.Scene {
         this.finishTurn(coor, coor)
     }
 
+    /**
+     * moves piece for current player after they choose their movement option 
+     * @param {Array} move - [new_row, new_col, 'normal']
+     * @param {*} piece - piece being moved 
+     */
     movePiece(move, piece) {
         console.log(move, piece)
         
@@ -178,21 +212,21 @@ export default class Game extends Phaser.Scene {
         let [row, col] = [piece.getData('row'), piece.getData('col')]
         this.board[row][col] = 0
         this.board[n_row][n_col] = piece
-        console.log('EDITED BOARD AFTER MOVE') 
         piece.updatePosition(n_row, n_col)
+        // fix health bar
         piece.getData('healthbar').setX(n_col*50)
         piece.getData('healthbar').setY(45 +n_row*50)
-        console.log(n_col +" " +  n_row)
+        // console.log(n_col + " " +  n_row)
         piece.getData('healthbar').draw()
-        this.finishTurn([row, col], [n_row, n_col])
-        // this.destroyGhosts(); 
-        // this.printBoard(); 
-        // this.disableInteractiveness(); 
-        // this.turn = false; 
-        // this.socket.emit('change', this.color, [row, col], [n_row, n_col])
 
+        this.finishTurn([row, col], [n_row, n_col])
     }
 
+    /**
+     * Finishes current player turn by removing ghost images, printing the new board, disabling interactiveness
+     * @param {Array} old_coor — [old_row, old_col] for the current player's piece that moved
+     * @param {Array} new_coor — [new_row, new_col]
+     */
     finishTurn(old_coor, new_coor) {
         console.log(this, old_coor, new_coor)
         this.destroyGhosts(); 
@@ -203,45 +237,50 @@ export default class Game extends Phaser.Scene {
 
     }
 
-    selfDestroy(v, h) {
-        console.log('in the self destroy', this.board[v][h])
-        let piece = this.board[v][h]
-        piece.getData('healthbar').bar.destroy();
-        piece.destroy(); 
+    /**
+     * Player of the current team was destroyed in the previous turn. (Initiated immediately after a turn switch)
+     * @param {int} row — dimensions of the destroyed player
+     * @param {int} col 
+     */
+    selfDestroy(row, col) {
+        let piece = this.board[row][col]
+        piece.getData('healthbar').bar.destroy()
+        piece.destroy() 
         if (this.whitePieces.children.size == 0 || this.blackPieces.children.size == 0) {
+            // REPLACE WITH REAL GAME OVER 
             console.log('game over')
         }
         
-        this.board[v][h] = 0 
+        this.board[row][col] = 0 
     }
 
     selfDamage(v, h, dmg) {
         let piece = this.board[v][h]
-        // piece.health -= 1 
-        // console.log(piece.getData('type'), 'health', piece.health)
-        // console.log('health', piece.health)
         console.log('selfdamage', v, h)
         piece.health -= 1
         piece.getData('healthbar').decrease(dmg*50)
         
     }
 
-    opponentMove(vh, nvh) {
-        console.log('opponent move', this, vh, nvh)
+    /**
+     * Changes opponent player's position on the board immediately after a turn switch. 
+     * @param {Array} old_coor - the moved piece's old vertical/horizontal coordinates 
+     * @param {Array} new_coor - piece's new coordinates after their turn 
+     */
+    opponentMove(old_coor, new_coor) {
+        console.log('opponent move', this, old_coor, new_coor)
         let self = this; 
         // board[v][h] 
-        let v = vh[0]
-        let h = vh[1]
-        let nv = nvh[0]
-        let nh = nvh[1]
+        let [row, col] = old_coor
+        let [n_row, n_col] = new_coor 
 
-        const piece = self.board[v][h]
-        this.board[v][h] = 0
-        this.board[nv][nh] = piece 
+        const piece = self.board[row][col]
+        this.board[row][col] = 0
+        this.board[n_row][n_col] = piece 
         if (piece != 0) {
-            piece.updatePosition(nv, nh)
-            piece.getData('healthbar').setX(nh*50)
-            piece.getData('healthbar').setY(45 + nv * 50)
+            piece.updatePosition(n_row, n_col)
+            piece.getData('healthbar').setX(n_col*50)
+            piece.getData('healthbar').setY(45 + n_row * 50)
             piece.getData('healthbar').draw()
             console.log(piece)
         }
@@ -311,6 +350,11 @@ export default class Game extends Phaser.Scene {
         })
     }
 
+    /**
+     * For each player, when it is *their turn*, this function is initiated automatically 
+     * in @setInteractiveness -- fires cannons for the current player
+     *  piece.fire() is in cannon.js 
+     */
     cannonsFire() {
         this.group = this.color ? this.whitePieces : this.blackPieces
         this.group.getChildren().forEach((piece) => {
@@ -323,10 +367,12 @@ export default class Game extends Phaser.Scene {
     // CREATING BOARD / PIECES 
     createBoard() {
         this.board = []; 
-
+        // let perlinBoard = new Board(16, 16).getBoard();
+        this.terrain = this.perlinBoard
         for (let i = 0; i < 16; i += 1) {
             this.board.push([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
         }
+        console.log(this.perlinBoard)
 
         let colors = [0xFFFFFF, 0xB75555]
         for (let i = 0; i < 16; i ++) {
@@ -334,8 +380,16 @@ export default class Game extends Phaser.Scene {
             let row = [] 
             for (let j = 0; j < 16; j++) {
             let color = colors[index]
+            let tile = this.perlinBoard[i][j]
             
-            row.push(this.add.rectangle(25+i*50, 25+j*50, 50, 50, color))
+            if (tile === "mountain") {
+                let sprite = this.add.image(25+i*50, 25+j*50, "ground")
+                sprite.setScale(1.04166667);
+            }
+            let sprite1 = this.add.image(25+i*50, 25+j*50, tile)
+            sprite1.setScale(1.04166667);
+            row.push(sprite1)
+            
             index = Math.abs(index - 1)
             }
     }
@@ -386,6 +440,11 @@ export default class Game extends Phaser.Scene {
         return this.board; 
     }
 
+    /**
+     * Creates a new piece on the board w/ health_bar, dimensions, etc. 
+     * @param {Object} type - the actual class type (Soldier, King, etc.)
+     * @returns the new piece 
+     */
     createPiece(row, col, white, type) {
         let color = white ? 'white' : 'black'
         let healthbar = new HealthBar(this, 25+col*50, 20 + row*50)
@@ -423,9 +482,5 @@ export default class Game extends Phaser.Scene {
             ghost.destroy()
         })
         this.ghosts = [] 
-    }
-
-    
-
-    
+    }    
 }

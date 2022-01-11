@@ -18,6 +18,7 @@ export default class Spy extends Piece {
         let victim = move[3]
         victim.setVisible(true)
         victim.healthbar.bar.setVisible(true)
+        if (!victim.getData('type').includes('Cannon'))
         this.scene.socket.emit('setVisible', this.getData('row'), this.getData('col'))
     }
 
