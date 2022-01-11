@@ -3,11 +3,10 @@ import Cannon from "./cannon";
 
 export default class Spy extends Piece {
     
-    
     constructor(scene, x, y, color, key, healthbar) {
         super(scene, x, y, key, color + 'Spy', color, healthbar); 
         this.moves = [] 
-        this.setScale(0.04, 0.04)
+        this.setScale(1, 1);
         this.attack_radius = 1 
         if (this.scene.color != (color != 'black')) {
             this.healthbar.bar.setVisible(false)
@@ -40,6 +39,5 @@ export default class Spy extends Piece {
         }
         return moves
     }
-
 
 }

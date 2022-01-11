@@ -6,7 +6,7 @@ export default class Cannon extends Piece {
     constructor(scene, x, y, color, key, healthbar) {
         super(scene, x, y, key, color + 'Cannon', color, healthbar); 
         this.moves = [] 
-        this.setScale(0.10, 0.10)
+        this.setScale(1, 1);
         this.attack_radius = 1 
         this.turns_to_shoot = 1
 
@@ -21,7 +21,7 @@ export default class Cannon extends Piece {
         if (this.turns_to_shoot == 0) {
             console.log("fire!")
             this.attackMoves().forEach((move) => {
-                this.attack(move)
+                this.attack(move);
             })
             this.turns_to_shoot = 2
         } else {

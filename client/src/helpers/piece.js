@@ -36,12 +36,11 @@ export default class Piece extends Phaser.GameObjects.Sprite {
             victim.destroyed();
         
             socket.emit('destroy', color, vr, vc)
-            
+
         }
         else {
             victim.healthbar.decrease(dmg*50);
             this.scene.socket.emit('damage', this.scene.color, vr, vc, dmg)
-            
         }
         
     }
@@ -72,8 +71,6 @@ export default class Piece extends Phaser.GameObjects.Sprite {
     possibleMoves(flag) {
         return this.doApm();
     }
-
-
 
     // should be moved to board.js 
     inBounds(row, col) {

@@ -6,6 +6,8 @@ import Spy from '../helpers/pieces/spy';
 import Cannon from '../helpers/pieces/cannon';
 import HealthBar from '../helpers/healthbar'
 import Board from '../helpers/board';
+import Gem from '../helpers/pieces/gem';
+import { infoTextConfig, BASE_ASSET_PATH, SPRITE_WIDTH, SPRITE_HEIGHT } from "../config";
 
 // need to add color functionality 
 export default class Game extends Phaser.Scene {
@@ -22,29 +24,66 @@ export default class Game extends Phaser.Scene {
         this.perlinBoard = data.perlinBoard
     }
 
-    preload() {
-        this.load.image('whitePawn', 'src/assets/whitePawn.png');
-        this.load.image('blackPawn', 'src/assets/blackPawn.png');
-        this.load.image('whiteKing', 'src/assets/whiteRook.png');
-        this.load.image('blackKing', 'src/assets/blackRook.png');
-        this.load.image('whiteQueen', 'src/assets/whiteQueen.png');
-        this.load.image('blackQueen', 'src/assets/blackQueen.png');
-        this.load.image('blackSniper', 'src/assets/blackSniper.png');
-        this.load.image('whiteSpy', 'src/assets/whiteSpy.png');
-        this.load.image('blackSpy', 'src/assets/blackSpy.png');
-        this.load.image('blackSpy', 'src/assets/blackSpy.png');
-        this.load.image('whiteCannon', 'src/assets/whiteCannon.png');
-        this.load.image('blackCannon', 'src/assets/blackCannon.png');
-        this.load.image('mountain', 'src/assets/mountain.png');
-        this.load.image('water', 'src/assets/water.png');
-        this.load.image('ground', 'src/assets/ground.png');
+    /**
+     * @description Loads sprite from spritesheet given asset path 
+     * @param {Phaser.Scene} scene Phaser Game Scene
+     * @param {string} name Name of sprite being loaded 
+     * @param {string} filename String representing spritesheet filename 
+     * @param {width} width Pixel width of single sprite frame
+     * @param {height} height Pixel height of single sprite frame
+     */
+    loadSprite(name,filename,width,height) {
+        const spriteWidth = width === undefined ? SPRITE_WIDTH : width;
+        const spriteHeight = height === undefined ? SPRITE_HEIGHT : height;
+        this.load.spritesheet(name, BASE_ASSET_PATH + filename, {frameWidth: spriteWidth, frameHeight: spriteHeight});
+    }
 
+    preload() {
+        this.loadSprite('whiteGem', 'gem-sheet.png', 32, 32);
+        this.loadSprite('blackGem', 'gem-sheet.png', 32, 32);
+        this.loadSprite('whitePawn', 'soldier-white-sheet.png');
+        this.loadSprite('blackPawn', 'soldier-black-sheet.png');
+        this.loadSprite('whiteKing', 'king-white-sheet.png');
+        this.loadSprite('blackKing', 'king-black-sheet.png');
+        this.loadSprite('whiteQueen', 'queen-white-sheet.png');
+        this.loadSprite('blackQueen', 'queen-black-sheet.png');
+        this.loadSprite('blackSniper', 'sniper-black-sheet.png');
+        this.loadSprite('whiteSpy', 'spy-white-sheet.png');
+        this.loadSprite('blackSpy', 'spy-black-sheet.png');
+        this.loadSprite('whiteCannon', 'cannon-white-sheet.png');
+        this.loadSprite('blackCannon', 'cannon-black-sheet.png');
+    }
+
+    /**
+     * @description Creates an idle animation for given sprite using spritesheet 
+     * @param {string} key Animation key 
+     * @param {string} type Sprite type 
+     * @param {number} startFrame Frame to start animating from in spritesheet 
+     * @param {number} endFrame Frame to start end animation from in spritesheet
+     */
+    createIdleAnimation(key, type, startFrame, endFrame, frameRate) {
+        this.anims.create({
+            key: key,
+            frames: this.anims.generateFrameNumbers(type, {start: startFrame, end: endFrame}),
+            frameRate: frameRate ? frameRate : 10,
+            repeat: -1
+        });
     }
 
     create() {
+        this.whiteSoldiers = this.add.group();
+        this.blackSoldiers = this.add.group();
+
+        this.whiteSpys = this.add.group();
+        this.blackSpys = this.add.group();
+        this.whiteKings = this.add.group();
+        this.blackKings = this.add.group();
+
         this.whitePieces = this.add.group();
         this.blackPieces = this.add.group();
-        this.cannons = []  
+        this.gems = this.add.group();
+
+        this.cannons = this.add.group(); 
         this.board = this.createBoard(); 
         this.ghosts = [] // refers to the ghost pieces that appear when user clicks on piece to see possible movement options
         
@@ -54,17 +93,32 @@ export default class Game extends Phaser.Scene {
             this.disableInteractiveness(); 
         }
 
-        // let self = this; 
+        // Create Animations
+        this.createIdleAnimation('idleWhiteSoldier', 'whitePawn', 0, 3);        
+        this.createIdleAnimation('idleBlackSoldier', 'blackPawn', 0, 3);
+        this.createIdleAnimation('idleWhiteKing', 'whiteKing', 0, 3);
+        this.createIdleAnimation('idleBlackKing', 'blackKing', 0, 3);
+        this.createIdleAnimation('idleWhiteCannon', 'whiteCannon',0, 3);
+        this.createIdleAnimation('idleGem', 'whiteGem', 0, 6);
+
+        // Start Animations
+        this.whiteSoldiers.playAnimation('idleWhiteSoldier');
+        this.blackSoldiers.playAnimation('idleBlackSoldier');
+        this.whiteKings.playAnimation('idleWhiteKing');
+        this.blackKings.playAnimation('idleBlackKing');
+        this.cannons.playAnimation('idleWhiteCannon');
+        this.gems.playAnimation('idleGem');
+        
+        let self = this; 
         
         // response to changing turns 
         this.socket.on('change', (color, vh, nvh) => {
-            if (color != this.color) {
+            if (color != self.color) {
                 // console.log('changing turns!', vh[0], vh[1], nvh[0], nvh[1])
                 this.opponentMove(vh, nvh)
                 this.turn = true; 
                 this.setInteractiveness(); 
             }
-            
         })
 
         /**
@@ -79,8 +133,8 @@ export default class Game extends Phaser.Scene {
         })
 
         this.socket.on('damage', (color, v, h, dmg) => {
-            if (color != this.color) {
-                this.selfDamage(v, h, dmg)
+            if (color != self.color) {
+                self.selfDamage(v, h, dmg)
             }
         })
 
@@ -93,12 +147,19 @@ export default class Game extends Phaser.Scene {
             let piece = this.board[row][col]
             piece.setVisible(true)
             piece.healthbar.bar.setVisible(true)
-        })
+        });
 
+        this.socket.on('win', (color) => {
+            console.log("Win Condition Met!");
+            const endGameText = self.color === color ? 'Winner!!' : 'Better luck next time';
+            self.add.text(450,400,endGameText,infoTextConfig);
+            self.board = [];
+
+            // End Game Logic Here
+        });
     }
 
     update() {
-
     }
     /**
      * HOW MOVING PIECES WORKS 
@@ -122,7 +183,19 @@ export default class Game extends Phaser.Scene {
      */
     attackPiece(move, piece) {
         let coor = [piece.getData('row'), piece.getData('col')]
-        piece.attack(move)
+        const victim = move[3];
+        const isVictimAGem = victim instanceof Gem;
+
+        if(isVictimAGem) {
+            victim.show(); // We know move[3] is a gem so we use the gem specific method
+        }
+        piece.attack(move);
+
+        if(isVictimAGem && victim.health <= 0) {
+            this.socket.emit('win', this.color);
+        }
+
+        console.log('finishing turn')
         this.finishTurn(coor, coor)
     }
 
@@ -236,7 +309,6 @@ export default class Game extends Phaser.Scene {
                     piece.setScale(old_scale);
                 })
 
-
                 piece.on('pointerdown', () => {
                     let pm = piece.possibleMoves(true)
                     let am = piece.attackMoves() 
@@ -292,7 +364,7 @@ export default class Game extends Phaser.Scene {
         })
     }
 
-// CREATING BOARD / PIECES 
+    // CREATING BOARD / PIECES 
     createBoard() {
         this.board = []; 
         // let perlinBoard = new Board(16, 16).getBoard();
@@ -321,27 +393,30 @@ export default class Game extends Phaser.Scene {
             index = Math.abs(index - 1)
             }
     }
-        // TO FILL IN - add Pieces 
+    // TO FILL IN - add Pieces 
     for (let i = 0; i < 8; i += 1) {
         // board[h][v]
-        this.board[0][i] = this.createPiece(0, i, true, Soldier)
-        this.board[1][i] = this.createPiece(1, i, true, King)
-        this.board[14][i] = this.createPiece(14, i, false, King)
-        this.board[15][i] = this.createPiece(15, i, false, Soldier)
-    }
-    this.board[13][0] = this.createPiece(13, 0, false, Queen)
-    this.board[13][1] = this.createPiece(13, 1, false, Sniper)
-    this.board[13][2] = this.createPiece(13, 2, false, Spy)
-    this.board[8][2] = this.createPiece(8, 2, true, Cannon)
-    this.cannons.push(this.board[8][2]) 
+        this.board[0][i] = this.createPiece(0, i, true, Soldier);
+        this.board[1][i] = this.createPiece(1, i, true, King);
+        this.board[14][i] = this.createPiece(14, i, false, King);
+        this.board[15][i] = this.createPiece(15, i, false, Soldier);
 
-    this.textConfig = {
-        color: 'white',
-        fontFamily: 'sans-serif',
-        fontSize: '25px',
-        lineHeight: 1.3,
-        align: 'center',
-    };
+        this.whiteSoldiers.add(this.board[0][i]);
+        this.blackSoldiers.add(this.board[15][i]);
+        this.whiteKings.add(this.board[1][i]);
+        this.blackKings.add(this.board[14][i]);
+    }
+    this.board[13][0] = this.createPiece(13, 0, false, Queen);
+    this.board[13][1] = this.createPiece(13, 1, false, Sniper);
+    this.board[13][2] = this.createPiece(13, 2, false, Spy);
+    this.board[8][2] = this.createPiece(8, 2, true, Cannon);
+    this.board[9][4] = this.createPiece(9, 4, true, Gem);
+    this.board[8][3] = this.createPiece(8, 3, false, Gem);
+
+    this.gems.add(this.board[9][4]);
+    this.gems.add(this.board[8][3]);
+
+    this.cannons.add(this.board[8][2]); 
 
     let p1 = this.color ? ' (You)' : ''
     let p2 = this.color ? '' : ' (You)'
@@ -349,17 +424,17 @@ export default class Game extends Phaser.Scene {
         850,
         200,
         'Player 1 - White' + p1,
-        this.textConfig,
+        infoTextConfig,
     );
 
     this.textPlayer2 = this.add.text(
         850, 
         600, 
         'Player 2 - Black' + p2, 
-        this.textConfig
+        infoTextConfig,
     ) 
 
-        this.textTurn = this.add.text(850, 400, 'GAME STARTING', this.textConfig)
+        this.textTurn = this.add.text(850, 400, 'GAME STARTING', infoTextConfig)
 
         console.log(this.whitePieces, this.blackPieces)
         return this.board; 
@@ -374,22 +449,19 @@ export default class Game extends Phaser.Scene {
         let color = white ? 'white' : 'black'
         let healthbar = new HealthBar(this, 25+col*50, 20 + row*50)
         this.piece = new type(this, 25+col*50, 25+row*50, color, color, healthbar)
-        console.log(this.piece)
         this.piece.updatePosition(row, col)
-
         white ? this.whitePieces.add(this.piece) : this.blackPieces.add(this.piece)
         return this.piece; 
     }
 
     setTurnText(turn) {
-        // if white (player1)
         console.log('setting Turn Text', turn)
         let text = turn ? 'YOUR TURN' : "OPPONENT'S TURN"
         if (this.textTurn) {
             this.textTurn.destroy() 
 
         }
-        this.textTurn = this.add.text(850, 400, text, this.textConfig)
+        this.textTurn = this.add.text(850, 400, text, infoTextConfig);
     }
 
     printBoard() {
@@ -410,9 +482,5 @@ export default class Game extends Phaser.Scene {
             ghost.destroy()
         })
         this.ghosts = [] 
-    }
-
-    
-
-    
+    }    
 }
