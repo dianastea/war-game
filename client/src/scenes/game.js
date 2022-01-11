@@ -52,6 +52,9 @@ export default class Game extends Phaser.Scene {
         this.loadSprite('blackSpy', 'spy-black-sheet.png');
         this.loadSprite('whiteCannon', 'cannon-white-sheet.png');
         this.loadSprite('blackCannon', 'cannon-black-sheet.png');
+        this.load.image('mountain', 'src/assets/mountain.png');
+        this.load.image('water', 'src/assets/water.png');
+        this.load.image('ground', 'src/assets/ground.png');
     }
 
     /**
@@ -127,7 +130,7 @@ export default class Game extends Phaser.Scene {
         */
         this.socket.on('destroy', (color, v, h) => {
             if (color != this.color) {
-                console.log('self destroy')
+                //console.log('self destroy')
                 this.selfDestroy(v, h)
             }
         })
@@ -150,7 +153,7 @@ export default class Game extends Phaser.Scene {
         });
 
         this.socket.on('win', (color) => {
-            console.log("Win Condition Met!");
+            //console.log("Win Condition Met!");
             const endGameText = self.color === color ? 'Winner!!' : 'Better luck next time';
             self.add.text(450,400,endGameText,infoTextConfig);
             self.board = [];
@@ -195,7 +198,7 @@ export default class Game extends Phaser.Scene {
             this.socket.emit('win', this.color);
         }
 
-        console.log('finishing turn')
+        //console.log('finishing turn')
         this.finishTurn(coor, coor)
     }
 
@@ -205,7 +208,7 @@ export default class Game extends Phaser.Scene {
      * @param {*} piece - piece being moved 
      */
     movePiece(move, piece) {
-        console.log(move, piece)
+        //console.log(move, piece)
         
         let [n_row, n_col, type] = move.slice(0,3)
         
@@ -228,7 +231,7 @@ export default class Game extends Phaser.Scene {
      * @param {Array} new_coor — [new_row, new_col]
      */
     finishTurn(old_coor, new_coor) {
-        console.log(this, old_coor, new_coor)
+        //console.log(this, old_coor, new_coor)
         this.destroyGhosts(); 
         this.printBoard(); 
         this.disableInteractiveness(); 
@@ -248,7 +251,7 @@ export default class Game extends Phaser.Scene {
         piece.destroy() 
         if (this.whitePieces.children.size == 0 || this.blackPieces.children.size == 0) {
             // REPLACE WITH REAL GAME OVER 
-            console.log('game over')
+            //console.log('game over')
         }
         
         this.board[row][col] = 0 
@@ -256,7 +259,7 @@ export default class Game extends Phaser.Scene {
 
     selfDamage(v, h, dmg) {
         let piece = this.board[v][h]
-        console.log('selfdamage', v, h)
+        //console.log('selfdamage', v, h)
         piece.health -= 1
         piece.getData('healthbar').decrease(dmg*50)
         
@@ -268,7 +271,7 @@ export default class Game extends Phaser.Scene {
      * @param {Array} new_coor - piece's new coordinates after their turn 
      */
     opponentMove(old_coor, new_coor) {
-        console.log('opponent move', this, old_coor, new_coor)
+        //console.log('opponent move', this, old_coor, new_coor)
         let self = this; 
         // board[v][h] 
         let [row, col] = old_coor
@@ -282,7 +285,7 @@ export default class Game extends Phaser.Scene {
             piece.getData('healthbar').setX(n_col*50)
             piece.getData('healthbar').setY(45 + n_row * 50)
             piece.getData('healthbar').draw()
-            console.log(piece)
+           // console.log(piece)
         }
         
 
@@ -300,23 +303,26 @@ export default class Game extends Phaser.Scene {
             if (piece.possibleMoves(false).length > 0) {
                 piece.setInteractive(); 
 
-                let old_scale = piece.scale 
+                const OLD_SCALE = 1
+                const NEW_SCALE = 1.3
+
+                console.log(piece.scale)
                 piece.on('pointerover', () => {
-                    piece.setScale(piece.scale * 1.1);
+                    piece.setScale(NEW_SCALE);
                 });
           
                 piece.on('pointerout', () => {
-                    piece.setScale(old_scale);
+                    piece.setScale(OLD_SCALE);
                 })
 
                 piece.on('pointerdown', () => {
                     let pm = piece.possibleMoves(true)
                     let am = piece.attackMoves() 
-                    console.log('pm', pm, 'am', am)
-                    console.log('attack r', piece.attack_radius)
+                    //console.log('pm', pm, 'am', am)
+                    //console.log('attack r', piece.attack_radius)
                     this.destroyGhosts()
                     for (let i = 0; i < pm.length; i += 1) {
-                        const ghost = this.add.image(25+pm[i][1]*50, 25+pm[i][0]*50, piece.getData('type')).setScale(old_scale).setAlpha(0.5)
+                        const ghost = this.add.image(25+pm[i][1]*50, 25+pm[i][0]*50, piece.getData('type')).setScale(OLD_SCALE).setAlpha(0.5)
                         ghost.setInteractive(); 
 
                         ghost.on('pointerup', () => {
