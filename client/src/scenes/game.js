@@ -390,7 +390,6 @@ export default class Game extends Phaser.Scene {
         // UPDATE THIS LATER 
         let o_row = row > 0 ? 1 : 0  
         let o_col = col-16 
-        console.log('help', o_row, row, o_col, col, self.pickupZone)
         const piece = dropped ? self.pickupZone[o_row][o_col] : self.board[row][col]
         if (!dropped) this.board[row][col] = 0
         this.board[n_row][n_col] = piece 
@@ -414,7 +413,7 @@ export default class Game extends Phaser.Scene {
         this.cannonsFire()
         this.potionMaking() 
         this.group.getChildren().forEach((piece) => {
-            if (piece.getData('type').includes('Civilian') && !piece.position_set) {
+            if ((piece.getData('type').includes('Civilian') || piece.getData('type').includes('Gem')) && !piece.position_set) {
                 piece.setInteractive() 
                 this.input.setDraggable(piece)
             }
@@ -560,13 +559,9 @@ export default class Game extends Phaser.Scene {
     }
     this.board[13][0] = this.createPiece(13, 0, false, Queen);
     this.board[13][1] = this.createPiece(13, 1, false, Sniper);
+    this.board[10][1] = this.createPiece(10, 1, false, Gem);
     
     this.board[8][2] = this.createPiece(8, 2, true, Cannon);
-    this.board[9][4] = this.createPiece(9, 4, true, Gem);
-    this.board[8][3] = this.createPiece(8, 3, false, Gem);
-
-    this.gems.add(this.board[9][4]);
-    this.gems.add(this.board[8][3]);
 
     this.cannons.add(this.board[8][2]); 
 
@@ -596,15 +591,13 @@ export default class Game extends Phaser.Scene {
         let pickupZone = [] 
         for (let i = 0; i < 2; i++) {
             let row = [] 
-            for (let j = 0; j < 10; j ++) {
+            for (let j = 0; j < 6; j ++) {
                 row = row.concat([0])
             }
             pickupZone.push(row)
-         }
-         console.log(pickupZone)
-        
+         }        
 
-        for (let i = 0; i < 10; i += 1) {
+        for (let i = 0; i < 6; i += 1) {
             let whiteCivilian = this.createPiece(0, 16+i, true, Civilian)
             pickupZone[0][i] = whiteCivilian 
             this.whiteCivilians.add(whiteCivilian)
@@ -615,6 +608,12 @@ export default class Game extends Phaser.Scene {
             this.blackCivilians.add(blackCivilian)
             this.blackPieces.add(blackCivilian)
         }
+        pickupZone[0][6] = this.createPiece(0, 16+6, true, Gem);
+        pickupZone[1][6] = this.createPiece(15, 16+6, false, Gem);
+    
+        this.gems.add(pickupZone[0][6]);
+        this.gems.add(pickupZone[1][6]);
+        
         return pickupZone
     }
 

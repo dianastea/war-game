@@ -6,8 +6,9 @@ export default class Gem extends Piece {
 		super(scene, x, y, key, color + 'Gem', color, healthbar);
 		this.setScale(1, 1);
 		this.moves = [];
-
+		
 		if (this.scene.color != (color != 'black')) {
+			console.log('make invisible!')
 			this.healthbar.bar.setVisible(false)
 			this.setVisible(false)
 		}
