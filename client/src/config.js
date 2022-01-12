@@ -36,9 +36,18 @@ const infoTextConfig = {
 	align: 'center',
 }
 
+const infoPotionTextConfig = {
+	color: '#ffffff',
+	fontFamily: 'sans-serif',
+	fontSize: '10px',
+	lineHeight: 1,
+	align: 'center',
+}
+
 export {
 	phaserConfig,
 	infoTextConfig,
+	infoPotionTextConfig,
 	WINDOW_WIDTH,
 	WINDOW_HEIGHT,
 	SPRITE_WIDTH,

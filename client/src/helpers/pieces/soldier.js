@@ -3,7 +3,7 @@ import Piece from "../piece";
 export default class Soldier extends Piece {
     
     constructor(scene, x, y, color, key, healthbar) {
-        super(scene, x, y, key, color + 'Pawn', color, healthbar); 
+        super(scene, x, y, key, color + 'Soldier', color, healthbar); 
         this.setScale(1, 1)
         this.attack_radius = 5 
         this.moves = [] 

@@ -3,8 +3,10 @@ import King from '../helpers/pieces/king';
 import Queen from '../helpers/pieces/queen';
 import Sniper from '../helpers/pieces/sniper';
 import Spy from '../helpers/pieces/spy';
+import Civilian from '../helpers/pieces/civilian';
 import Cannon from '../helpers/pieces/cannon';
 import HealthBar from '../helpers/healthbar'
+import PotionBar from '../helpers/potionbar'
 import Board from '../helpers/board';
 import Gem from '../helpers/pieces/gem';
 import { infoTextConfig, BASE_ASSET_PATH, SPRITE_WIDTH, SPRITE_HEIGHT } from "../config";
@@ -38,18 +40,20 @@ export default class Game extends Phaser.Scene {
         this.load.spritesheet(name, BASE_ASSET_PATH + filename, {frameWidth: spriteWidth, frameHeight: spriteHeight});
     }
 
+    // temporarily changed spy sprites to civilian (in preload and createBoard where the spies were placed)
+    // CHANGED PAWN TO SOLDIER IN SPRITES, DOAPM, AND SOLDIER.JS CONSTRUCTOR
     preload() {
         this.loadSprite('whiteGem', 'gem-sheet.png', 32, 32);
         this.loadSprite('blackGem', 'gem-sheet.png', 32, 32);
-        this.loadSprite('whitePawn', 'soldier-white-sheet.png');
-        this.loadSprite('blackPawn', 'soldier-black-sheet.png');
+        this.loadSprite('whiteSoldier', 'soldier-white-sheet.png');
+        this.loadSprite('blackSoldier', 'soldier-black-sheet.png');
         this.loadSprite('whiteKing', 'king-white-sheet.png');
         this.loadSprite('blackKing', 'king-black-sheet.png');
         this.loadSprite('whiteQueen', 'queen-white-sheet.png');
         this.loadSprite('blackQueen', 'queen-black-sheet.png');
         this.loadSprite('blackSniper', 'sniper-black-sheet.png');
-        this.loadSprite('whiteSpy', 'spy-white-sheet.png');
-        this.loadSprite('blackSpy', 'spy-black-sheet.png');
+        this.loadSprite('whiteCivilian', 'spy-white-sheet.png');
+        this.loadSprite('blackCivilian', 'spy-black-sheet.png');
         this.loadSprite('whiteCannon', 'cannon-white-sheet.png');
         this.loadSprite('blackCannon', 'cannon-black-sheet.png');
         this.load.image('mountain', 'src/assets/mountain.png');
@@ -124,6 +128,9 @@ export default class Game extends Phaser.Scene {
     }
 
     create() {
+        this.whiteCivilians = this.add.group(); 
+        this.blackCivilians = this.add.group(); 
+
         this.whiteSoldiers = this.add.group();
         this.blackSoldiers = this.add.group();
 
@@ -138,7 +145,10 @@ export default class Game extends Phaser.Scene {
 
         this.cannons = this.add.group(); 
         this.board = this.createBoard(); 
+        this.pickupZone = this.createPickupZone(); 
         this.ghosts = [] // refers to the ghost pieces that appear when user clicks on piece to see possible movement options
+        
+        this.potionIncrease = 0 
         
         if (this.turn) {
             this.setInteractiveness(); 
@@ -147,8 +157,8 @@ export default class Game extends Phaser.Scene {
         }
 
         // Create Animations
-        this.createIdleAnimation('idleWhiteSoldier', 'whitePawn', 0, 3);        
-        this.createIdleAnimation('idleBlackSoldier', 'blackPawn', 0, 3);
+        this.createIdleAnimation('idleWhiteSoldier', 'whiteSoldier', 0, 3);        
+        this.createIdleAnimation('idleBlackSoldier', 'blackSoldier', 0, 3);
         this.createIdleAnimation('idleWhiteKing', 'whiteKing', 0, 3);
         this.createIdleAnimation('idleBlackKing', 'blackKing', 0, 3);
         this.createIdleAnimation('idleWhiteCannon', 'whiteCannon',0, 3);
@@ -165,12 +175,19 @@ export default class Game extends Phaser.Scene {
         let self = this; 
         
         // response to changing turns 
-        this.socket.on('change', (color, vh, nvh) => {
+        this.socket.on('change', (color, vh, nvh, dropped) => {
             if (color != self.color) {
-                // console.log('changing turns!', vh[0], vh[1], nvh[0], nvh[1])
-                this.opponentMove(vh, nvh)
+                console.log('dropped', dropped)
+                // self.color ? this.blackPotionBar.increase(potionIncrease) : this.whitePotionBar.increase(potionIncrease)
+                this.opponentMove(vh, nvh, dropped)
                 this.turn = true; 
                 this.setInteractiveness(); 
+            }
+        })
+
+        this.socket.on('potionIncrease', (color, potionIncrease) => {
+            if (color != self.color) {
+                self.color ? this.blackPotionBar.increase(potionIncrease) : this.whitePotionBar.increase(potionIncrease)
             }
         })
 
@@ -210,6 +227,49 @@ export default class Game extends Phaser.Scene {
 
             // End Game Logic Here
         });
+
+        this.input.on('drag', (pointer, gameObject, dragX, dragY) => {
+            gameObject.x = dragX;
+            gameObject.y = dragY;
+            let [row, col] = [(dragY - 25) / 50, (dragX - 25) / 50]
+            gameObject.getData('healthbar').setX(col*50)
+            gameObject.getData('healthbar').setY(45 + row * 50)
+            gameObject.getData('healthbar').draw()
+        })
+
+        this.input.on('dragstart', (pointer, gameObject) => {
+            this.children.bringToTop(gameObject);
+            console.log('DRAG START')
+        })
+
+        this.input.on('dragend', (pointer, gameObject, dropped) => {
+            
+            let [row, col] = [(gameObject.input.dragStartY - 25) / 50, (gameObject.input.dragStartX - 25) / 50]
+            
+            let n_row = Math.round((gameObject.y - 25 ) / 50)
+            let n_col = Math.round((gameObject.x - 25) / 50)
+
+            if (!gameObject.checkMoveViability(row, col, n_row, n_col)) {
+                gameObject.x = gameObject.input.dragStartX; 
+                gameObject.y = gameObject.input.dragStartY; 
+                gameObject.getData('healthbar').setX(col*50); 
+                gameObject.getData('healthbar').setY(45+row*50); 
+                gameObject.getData('healthbar').draw() 
+                return;
+            }  
+            gameObject.x = n_col*50 + 25 
+            gameObject.y = n_row*50 + 25
+            gameObject.updatePosition(n_row, n_col)
+
+            gameObject.getData('healthbar').setX(n_col*50)
+            gameObject.getData('healthbar').setY(45 + n_row * 50)
+            gameObject.getData('healthbar').draw()
+            
+            this.input.setDraggable(gameObject, false)
+            gameObject.position_set = true
+            this.finishTurn([row, col], [n_row, n_col], true)
+                                
+        })
     }
 
     update() {
@@ -249,7 +309,7 @@ export default class Game extends Phaser.Scene {
         }
 
         //console.log('finishing turn')
-        this.finishTurn(coor, coor)
+        this.finishTurn(coor, coor, false)
     }
 
     /**
@@ -272,7 +332,7 @@ export default class Game extends Phaser.Scene {
         // console.log(n_col + " " +  n_row)
         piece.getData('healthbar').draw()
 
-        this.finishTurn([row, col], [n_row, n_col])
+        this.finishTurn([row, col], [n_row, n_col], false)
     }
 
     /**
@@ -280,13 +340,13 @@ export default class Game extends Phaser.Scene {
      * @param {Array} old_coor — [old_row, old_col] for the current player's piece that moved
      * @param {Array} new_coor — [new_row, new_col]
      */
-    finishTurn(old_coor, new_coor) {
+    finishTurn(old_coor, new_coor, dropped) {
         //console.log(this, old_coor, new_coor)
         this.destroyGhosts(); 
         this.printBoard(); 
         this.disableInteractiveness(); 
         this.turn = false; 
-        this.socket.emit('change', this.color, old_coor, new_coor)
+        this.socket.emit('change', this.color, old_coor, new_coor, dropped)
 
     }
 
@@ -320,22 +380,25 @@ export default class Game extends Phaser.Scene {
      * @param {Array} old_coor - the moved piece's old vertical/horizontal coordinates 
      * @param {Array} new_coor - piece's new coordinates after their turn 
      */
-    opponentMove(old_coor, new_coor) {
+    opponentMove(old_coor, new_coor, dropped) {
         //console.log('opponent move', this, old_coor, new_coor)
         let self = this; 
         // board[v][h] 
         let [row, col] = old_coor
         let [n_row, n_col] = new_coor 
 
-        const piece = self.board[row][col]
-        this.board[row][col] = 0
+        // UPDATE THIS LATER 
+        let o_row = row > 0 ? 1 : 0  
+        let o_col = col-16 
+        console.log('help', o_row, row, o_col, col, self.pickupZone)
+        const piece = dropped ? self.pickupZone[o_row][o_col] : self.board[row][col]
+        if (!dropped) this.board[row][col] = 0
         this.board[n_row][n_col] = piece 
         if (piece != 0) {
             piece.updatePosition(n_row, n_col)
             piece.getData('healthbar').setX(n_col*50)
             piece.getData('healthbar').setY(45 + n_row * 50)
             piece.getData('healthbar').draw()
-           // console.log(piece)
         }
         
 
@@ -344,13 +407,18 @@ export default class Game extends Phaser.Scene {
     setInteractiveness() {
         this.printBoard() 
         this.setTurnText(true)
+        this.potionIncrease = 0 
 
         this.group = this.color ? this.whitePieces : this.blackPieces
         
         this.cannonsFire()
+        this.potionMaking() 
         this.group.getChildren().forEach((piece) => {
-
-            if (piece.possibleMoves(false).length > 0) {
+            if (piece.getData('type').includes('Civilian') && !piece.position_set) {
+                piece.setInteractive() 
+                this.input.setDraggable(piece)
+            }
+            else if (piece.possibleMoves(false).length > 0) {
                 piece.setInteractive(); 
 
                 const OLD_SCALE = 1
@@ -410,19 +478,32 @@ export default class Game extends Phaser.Scene {
      * For each player, when it is *their turn*, this function is initiated automatically 
      * in @setInteractiveness -- fires cannons for the current player
      *  piece.fire() is in cannon.js 
+     * WHY THIS.GROUP? i think i put this need to change 
      */
     cannonsFire() {
-        this.group = this.color ? this.whitePieces : this.blackPieces
-        this.group.getChildren().forEach((piece) => {
+        let curr_group = this.color ? this.whitePieces : this.blackPieces
+        curr_group.getChildren().forEach((piece) => {
             if (piece.getData('type').includes('Cannon')) {
                 piece.fire(); 
             }
         })
     }
 
+    potionMaking() {
+        let civilians = this.color ? this.whiteCivilians : this.blackCivilians 
+        civilians.getChildren().forEach((civilian) => {
+            if (civilian.position_set) {
+                civilian.createPotion()
+                this.potionIncrease += 10 
+            }
+        })
+        this.socket.emit('potionIncrease', this.color, this.potionIncrease)
+    }
+
     // CREATING BOARD / PIECES 
     createBoard() {
         this.board = []; 
+        this.createPotion()
         // let perlinBoard = new Board(16, 16).getBoard();
         this.terrain = this.perlinBoard
         for (let i = 0; i < 16; i += 1) {
@@ -479,7 +560,7 @@ export default class Game extends Phaser.Scene {
     }
     this.board[13][0] = this.createPiece(13, 0, false, Queen);
     this.board[13][1] = this.createPiece(13, 1, false, Sniper);
-    this.board[13][2] = this.createPiece(13, 2, false, Spy);
+    
     this.board[8][2] = this.createPiece(8, 2, true, Cannon);
     this.board[9][4] = this.createPiece(9, 4, true, Gem);
     this.board[8][3] = this.createPiece(8, 3, false, Gem);
@@ -511,6 +592,32 @@ export default class Game extends Phaser.Scene {
         return this.board; 
     }
 
+    createPickupZone() {
+        let pickupZone = [] 
+        for (let i = 0; i < 2; i++) {
+            let row = [] 
+            for (let j = 0; j < 10; j ++) {
+                row = row.concat([0])
+            }
+            pickupZone.push(row)
+         }
+         console.log(pickupZone)
+        
+
+        for (let i = 0; i < 10; i += 1) {
+            let whiteCivilian = this.createPiece(0, 16+i, true, Civilian)
+            pickupZone[0][i] = whiteCivilian 
+            this.whiteCivilians.add(whiteCivilian)
+            this.whitePieces.add(whiteCivilian)
+    
+            let blackCivilian = this.createPiece(15, 16+i, false, Civilian)
+            pickupZone[1][i] = blackCivilian
+            this.blackCivilians.add(blackCivilian)
+            this.blackPieces.add(blackCivilian)
+        }
+        return pickupZone
+    }
+
     /**
      * Creates a new piece on the board w/ health_bar, dimensions, etc. 
      * @param {Object} type - the actual class type (Soldier, King, etc.)
@@ -525,6 +632,11 @@ export default class Game extends Phaser.Scene {
         return this.piece; 
     }
 
+    createPotion() {
+        this.whitePotionBar = new PotionBar(this, 800, 75, 'white')
+        this.blackPotionBar = new PotionBar(this, 800, 750, 'black')
+    }
+
     setTurnText(turn) {
         console.log('setting Turn Text', turn)
         let text = turn ? 'YOUR TURN' : "OPPONENT'S TURN"
@@ -536,7 +648,7 @@ export default class Game extends Phaser.Scene {
     }
 
     printBoard() {
-        const translation = {'whitePawn': 'wP', 'blackPawn': 'bP', 'whiteKing': 'wK', 'blackKing': 'bK', 'blackQueen': 'bQ'}
+        const translation = {'whiteSoldier': 'wS', 'blackSoldier': 'bS', 'whiteKing': 'wK', 'blackKing': 'bK', 'blackQueen': 'bQ'}
 
         for (let row = 0; row < 16; row ++) {
             let str = ''

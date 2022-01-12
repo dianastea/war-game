@@ -7,6 +7,7 @@ export default class Piece extends Phaser.GameObjects.Sprite {
         this.health = 2
         this.healthbar = healthbar
         this.attack_radius = 1
+        this.position_set = false 
 
         this.scene.add.existing(this)
         this.setData({'type': type, 'color': color, 'row': 0, 'col': 0, 'healthbar' : healthbar})
@@ -74,7 +75,7 @@ export default class Piece extends Phaser.GameObjects.Sprite {
 
     // should be moved to board.js 
     inBounds(row, col) {
-        return row >= 0 && col >= 0 && row < this.scene.board.length && col < this.scene.board[0].length 
+        return row >= 0 && col >= 0 && row < this.scene.board.length && col < this.scene.board[0].length-1
     }
     
     /**
@@ -86,6 +87,7 @@ export default class Piece extends Phaser.GameObjects.Sprite {
     getApm(dir, steps) {
         let row = this.getData('row') 
         let col = this.getData('col')
+        
         let visited = [[row, col, 'normal']];
         let stack = [];
         stack.push([row, col, 'normal']);
@@ -96,7 +98,6 @@ export default class Piece extends Phaser.GameObjects.Sprite {
                 return
             }
             let s = stack.pop()
-            console.log(s)
             let boardSquare = 1
             if (!this.inBounds(s[0] + dir[0], s[1] + dir[1])) 
                 return
@@ -119,11 +120,24 @@ export default class Piece extends Phaser.GameObjects.Sprite {
         //visited.forEach(element => this.moves.push(element));
     }
 
+
+    /**
+     * Checks if a move is viable via same logic as @getApm
+     * @returns if the move is (1) in bounds (2) either itself or an empty square AND (3) on ground terrain 
+     */
+    checkMoveViability(row, col, n_row, n_col) {
+        if(!this.inBounds(n_row, n_col)) {
+            console.log('OUT OF BOUNDS', n_row, n_col)
+            return false 
+        }
+        let boardSquare = this.scene.board[n_row][n_col]
+        return ((boardSquare == 0 || (row == n_row && col == n_col)) && this.scene.terrain[n_row][n_col].includes('ground')) 
+    }
+
     /**
      * Calculates all possible moves of piece
      * @returns nested array containing moves [[x1, y1, 'normal']....]
      */
-
     doApm() {
         this.moves = [];
         if (this.getData('type').includes("King")) {
@@ -138,7 +152,7 @@ export default class Piece extends Phaser.GameObjects.Sprite {
             this.getApm([-1,-1], 3);
             // console.log(row, col)
             // console.log(this.moves);
-        } else if (this.getData('type').includes("Pawn")) {
+        } else if (this.getData('type').includes("Soldier")) {
             //[possibleX, possibleY], max_travel_distance
             this.getApm([1,0], 1);
             this.getApm([-1,0], 1);

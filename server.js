@@ -12,8 +12,12 @@ io.on('connection', (socket) => {
     /* CHANGING TURNS 
     * Current player emits signal to server -> opponent accepts signal and starts it's turn 
     */
-    socket.on('change', (color, vh, nvh) => {
-        io.emit('change', color, vh, nvh);
+    socket.on('change', (color, vh, nvh, dropped) => {
+        io.emit('change', color, vh, nvh, dropped);
+    });
+
+    socket.on('potionIncrease', (color, potionIncrease) => {
+        io.emit('potionIncrease', color, potionIncrease); 
     });
 
     /* OPPONENT PIECE IS KILLED 
