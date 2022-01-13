@@ -40,6 +40,7 @@ export default class Game extends Phaser.Scene {
         this.load.spritesheet(name, BASE_ASSET_PATH + filename, {frameWidth: spriteWidth, frameHeight: spriteHeight});
     }
 
+    /* CHANGES TO PRELOAD */
     // temporarily changed spy sprites to civilian (in preload and createBoard where the spies were placed)
     // CHANGED PAWN TO SOLDIER IN SPRITES, DOAPM, AND SOLDIER.JS CONSTRUCTOR
     preload() {
@@ -143,11 +144,15 @@ export default class Game extends Phaser.Scene {
         this.blackPieces = this.add.group();
         this.gems = this.add.group();
 
+
+        // CHANGES: added pickupZone for civilians / gem and in the future, for cards 
         this.cannons = this.add.group(); 
         this.board = this.createBoard(); 
         this.pickupZone = this.createPickupZone(); 
         this.ghosts = [] // refers to the ghost pieces that appear when user clicks on piece to see possible movement options
         
+        // CHANGES: potionIncrease holds how much the CURRENT player's potion increased in their round
+            // then sent over to the other player in socket.emit('potionIncrease')
         this.potionIncrease = 0 
         
         if (this.turn) {
@@ -177,14 +182,17 @@ export default class Game extends Phaser.Scene {
         // response to changing turns 
         this.socket.on('change', (color, vh, nvh, dropped) => {
             if (color != self.color) {
-                console.log('dropped', dropped)
-                // self.color ? this.blackPotionBar.increase(potionIncrease) : this.whitePotionBar.increase(potionIncrease)
                 this.opponentMove(vh, nvh, dropped)
                 this.turn = true; 
                 this.setInteractiveness(); 
             }
         })
 
+        /**
+         * Updates potion bar on the enemy side (while it's still the other player's turn)
+         * @color - the color of the current player who emitted 
+         * @potionIncrease - amount the enemy player potion bar increased
+         */
         this.socket.on('potionIncrease', (color, potionIncrease) => {
             if (color != self.color) {
                 self.color ? this.blackPotionBar.increase(potionIncrease) : this.whitePotionBar.increase(potionIncrease)
@@ -212,7 +220,6 @@ export default class Game extends Phaser.Scene {
          * Sets player visible after opponent revealed them. 
          * @param row/col - dimensions of the revealed player 
         */
-        
         this.socket.on('setVisible', (row, col) => {
             let piece = this.board[row][col]
             piece.setVisible(true)
@@ -228,6 +235,10 @@ export default class Game extends Phaser.Scene {
             // End Game Logic Here
         });
 
+        /**
+         * Drags the player from pickupZone to the board 
+         * Only updates current position of player and their healthbar
+         */
         this.input.on('drag', (pointer, gameObject, dragX, dragY) => {
             gameObject.x = dragX;
             gameObject.y = dragY;
@@ -237,11 +248,20 @@ export default class Game extends Phaser.Scene {
             gameObject.getData('healthbar').draw()
         })
 
+        /**
+         * Places gameObject on the top layer 
+         *  (so it's on top of all other objects while being dragged) 
+         */
         this.input.on('dragstart', (pointer, gameObject) => {
             this.children.bringToTop(gameObject);
             console.log('DRAG START')
         })
 
+        /**
+         * Updates player's position if finished dragging from pickupZone onto board
+         * Only updates position if the end position is VALID 
+         * checkMoveViability in piece.js (same logic as getApm()) 
+         */
         this.input.on('dragend', (pointer, gameObject, dropped) => {
             
             let [row, col] = [(gameObject.input.dragStartY - 25) / 50, (gameObject.input.dragStartX - 25) / 50]
@@ -287,7 +307,6 @@ export default class Game extends Phaser.Scene {
     */ 
 
 
-
     /**
      * Attacks enemy player (initiated in @setInteractiveness 
      *  when current player chooses an attack mvmt)
@@ -308,7 +327,6 @@ export default class Game extends Phaser.Scene {
             this.socket.emit('win', this.color);
         }
 
-        //console.log('finishing turn')
         this.finishTurn(coor, coor, false)
     }
 
@@ -326,10 +344,9 @@ export default class Game extends Phaser.Scene {
         this.board[row][col] = 0
         this.board[n_row][n_col] = piece
         piece.updatePosition(n_row, n_col)
-        // fix health bar
+
         piece.getData('healthbar').setX(n_col*50)
         piece.getData('healthbar').setY(45 +n_row*50)
-        // console.log(n_col + " " +  n_row)
         piece.getData('healthbar').draw()
 
         this.finishTurn([row, col], [n_row, n_col], false)
@@ -341,11 +358,11 @@ export default class Game extends Phaser.Scene {
      * @param {Array} new_coor — [new_row, new_col]
      */
     finishTurn(old_coor, new_coor, dropped) {
-        //console.log(this, old_coor, new_coor)
         this.destroyGhosts(); 
         this.printBoard(); 
         this.disableInteractiveness(); 
         this.turn = false; 
+        // CHANGE: dropped is true if player moved was from the pickupZone 
         this.socket.emit('change', this.color, old_coor, new_coor, dropped)
 
     }
@@ -359,10 +376,6 @@ export default class Game extends Phaser.Scene {
         let piece = this.board[row][col]
         piece.getData('healthbar').bar.destroy()
         piece.destroy() 
-        if (this.whitePieces.children.size == 0 || this.blackPieces.children.size == 0) {
-            // REPLACE WITH REAL GAME OVER 
-            //console.log('game over')
-        }
         
         this.board[row][col] = 0 
     }
@@ -380,10 +393,10 @@ export default class Game extends Phaser.Scene {
      * @param {Array} old_coor - the moved piece's old vertical/horizontal coordinates 
      * @param {Array} new_coor - piece's new coordinates after their turn 
      */
+
+    // CHANGE: now sets pieces from pickupZone onto board if(dropped)
     opponentMove(old_coor, new_coor, dropped) {
-        //console.log('opponent move', this, old_coor, new_coor)
         let self = this; 
-        // board[v][h] 
         let [row, col] = old_coor
         let [n_row, n_col] = new_coor 
 
@@ -403,6 +416,8 @@ export default class Game extends Phaser.Scene {
 
     }
 
+    // CHANGE: added potionIncrease and potionMaking() 
+    // sets pickupZone characters draggable so they can be moved onto the board
     setInteractiveness() {
         this.printBoard() 
         this.setTurnText(true)
@@ -435,8 +450,6 @@ export default class Game extends Phaser.Scene {
                 piece.on('pointerdown', () => {
                     let pm = piece.possibleMoves(true)
                     let am = piece.attackMoves() 
-                    //console.log('pm', pm, 'am', am)
-                    //console.log('attack r', piece.attack_radius)
                     this.destroyGhosts()
                     for (let i = 0; i < pm.length; i += 1) {
                         const ghost = this.add.image(25+pm[i][1]*50, 25+pm[i][0]*50, piece.getData('type')).setScale(OLD_SCALE).setAlpha(0.5)
@@ -488,6 +501,9 @@ export default class Game extends Phaser.Scene {
         })
     }
 
+    // CHANGE: makes every civilian ON THE BOARD create potion for the current player turn 
+    // triggered in setInteractiveness() 
+    // position_set = true IF player is on the board (not pickupZone)
     potionMaking() {
         let civilians = this.color ? this.whiteCivilians : this.blackCivilians 
         civilians.getChildren().forEach((civilian) => {
@@ -587,6 +603,13 @@ export default class Game extends Phaser.Scene {
         return this.board; 
     }
 
+
+    // CHANGE: added this function 
+    // similar to createBoard but creates pickupZone 
+    // ATTENTION: the col of the piece is 16+(column in the pickupZone) 
+        // row for blackPieces is 15 (so they have the right y val)
+        //i.e. the piece in pickupZone[1][0] has row=15 (so it's at the bottom of the screen) 
+        //  but col=16+0 (so that it has the right x,y position) 
     createPickupZone() {
         let pickupZone = [] 
         for (let i = 0; i < 2; i++) {
@@ -631,6 +654,7 @@ export default class Game extends Phaser.Scene {
         return this.piece; 
     }
 
+    // Draws potion bar on board 
     createPotion() {
         this.whitePotionBar = new PotionBar(this, 800, 75, 'white')
         this.blackPotionBar = new PotionBar(this, 800, 750, 'black')
