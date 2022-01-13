@@ -58,8 +58,10 @@ export default class Game extends Phaser.Scene {
         this.loadSprite('blackQueen', 'queen-black-sheet.png');
         this.loadSprite('whiteSniper', 'sniper-white-sheet.png')
         this.loadSprite('blackSniper', 'sniper-black-sheet.png');
-        this.loadSprite('whiteCivilian', 'spy-white-sheet.png');
-        this.loadSprite('blackCivilian', 'spy-black-sheet.png');
+        this.loadSprite('whiteCivilian', 'civilian-white-sheet.png');
+        this.loadSprite('blackCivilian', 'civilian-black-sheet.png');
+        this.loadSprite('whiteSpy', 'spy-white-sheet.png');
+        this.loadSprite('blackSpy', 'spy-black-sheet.png');
         this.loadSprite('whiteCannon', 'cannon-white-sheet.png');
         this.loadSprite('blackCannon', 'cannon-black-sheet.png');
 
@@ -239,12 +241,10 @@ export default class Game extends Phaser.Scene {
         });
 
         this.socket.on('win', (color) => {
-            //console.log("Win Condition Met!");
+            // End Game Logic Here
             const endGameText = self.color === color ? 'Winner!!' : 'Better luck next time';
             self.add.text(450,400,endGameText,infoTextConfig);
             self.board = [];
-
-            // End Game Logic Here
         });
 
         /**
@@ -353,8 +353,11 @@ export default class Game extends Phaser.Scene {
         let [n_row, n_col, type] = move.slice(0,3)
         let [row, col] = [piece.getData('row'), piece.getData('col')]
 
+        console.log("!!!!!!!!!!!!!!!!!!!!!!! MOVE !!!!!!!!!!!!!!!!!!!!!!!!");
+
         // Check if piece is going to move on top of a trap 
         if(this.board[n_row][n_col] instanceof Trap) {
+            console.log("Hello World!");
             this.attackPiece(['attack', row, col, this.board[row][col]], this.board[row][col]);
 
             // Destroy trap
@@ -599,9 +602,11 @@ export default class Game extends Phaser.Scene {
     this.board[8][2] = this.createPiece(8, 2, true, Cannon);
 
     this.board[12][3] = this.createPiece(12,3,true,Trap);
+    this.board[2][3] = this.createPiece(2,3,false,Trap);
 
     this.cannons.add(this.board[8][2]); 
     this.whiteTraps.add(this.board[12][3]);
+    this.blackTraps.add(this.board[2][3]);
 
     let p1 = this.color ? ' (You)' : ''
     let p2 = this.color ? '' : ' (You)'
@@ -643,19 +648,19 @@ export default class Game extends Phaser.Scene {
         }       
 
         const pieceTypes = [
-            Gem, 
-            Trap,
             Soldier,
             King,
             Queen,
             Sniper,
+            Civilian,
             Spy,
-            Civilian
+            Trap,
+            Gem, 
         ];
          
+        
         for(let i = 1; i < pieceTypes.length; i++) {
             const whitePiece = this.createPiece(0, 16+i, true, pieceTypes[i]);  
-            console.log(whitePiece);
             pickupZone[0][i] = whitePiece;
             const blackPiece = this.createPiece(15, 16+i, false, pieceTypes[i]);
             pickupZone[1][i] = blackPiece;
@@ -674,8 +679,8 @@ export default class Game extends Phaser.Scene {
         // }
 
         // Add Gems
-        pickupZone[0][6] = this.createPiece(0, 16+6, true, Gem);
-        pickupZone[1][6] = this.createPiece(15, 16+6, false, Gem);
+        // pickupZone[0][6] = this.createPiece(0, 16+6, true, Gem);
+        // pickupZone[1][6] = this.createPiece(15, 16+6, false, Gem);
     
         // this.gems.add(pickupZone[0][6]);
         // this.gems.add(pickupZone[1][6]);

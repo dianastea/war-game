@@ -59,8 +59,8 @@ export default class Piece extends Phaser.GameObjects.Sprite {
             for (let j = c - this.attack_radius; j <= c + this.attack_radius; j++) {
                 if (this.inBounds(i, j)) {
                     let victim = this.scene.board[i][j]
-                    if (victim != 0 && victim.getData('color') != this.getData('color') && !this.getData('type').includes('Spy') && !this.getData('type').includes('Trap')) {
-                        console.log('victim', victim, i, j)
+                    if (victim != 0 && victim.getData('color') != this.getData('color') && !this.getData('type').includes('Spy') && !victim.getData('type').includes('Trap')) {
+                        console.log('victim', victim, i, j);
                         moves.push(['attack', i, j, this.scene.board[i][j]])
                     }
                 }
