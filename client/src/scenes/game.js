@@ -10,7 +10,7 @@ import PotionBar from '../helpers/potionbar'
 import Board from '../helpers/board';
 import Gem from '../helpers/pieces/gem';
 import Trap from '../helpers/pieces/trap';
-import { infoTextConfig, BASE_ASSET_PATH, SPRITE_WIDTH, SPRITE_HEIGHT } from "../config";
+import { infoTextConfig, BASE_ASSET_PATH, SPRITE_WIDTH, SPRITE_HEIGHT, NUM_PIECES_PER_PLAYER } from "../config";
 
 // need to add color functionality 
 export default class Game extends Phaser.Scene {
@@ -45,6 +45,7 @@ export default class Game extends Phaser.Scene {
     // temporarily changed spy sprites to civilian (in preload and createBoard where the spies were placed)
     // CHANGED PAWN TO SOLDIER IN SPRITES, DOAPM, AND SOLDIER.JS CONSTRUCTOR
     preload() {
+        // Pieces
         this.loadSprite('whiteGem', 'gem-sheet.png', 32, 32);
         this.loadSprite('blackGem', 'gem-sheet.png', 32, 32);
         this.loadSprite('whiteTrap', 'fire-trap.png', 32, 41);
@@ -55,11 +56,14 @@ export default class Game extends Phaser.Scene {
         this.loadSprite('blackKing', 'king-black-sheet.png');
         this.loadSprite('whiteQueen', 'queen-white-sheet.png');
         this.loadSprite('blackQueen', 'queen-black-sheet.png');
+        this.loadSprite('whiteSniper', 'sniper-white-sheet.png')
         this.loadSprite('blackSniper', 'sniper-black-sheet.png');
         this.loadSprite('whiteCivilian', 'spy-white-sheet.png');
         this.loadSprite('blackCivilian', 'spy-black-sheet.png');
         this.loadSprite('whiteCannon', 'cannon-white-sheet.png');
         this.loadSprite('blackCannon', 'cannon-black-sheet.png');
+
+        // Terrain
         this.load.image('mountain', 'src/assets/mountain.png');
         this.load.image('water', 'src/assets/water.png');
         this.load.image('downmountain', 'src/assets/floor_377.png');
@@ -448,8 +452,7 @@ export default class Game extends Phaser.Scene {
             if ((piece.getData('type').includes('Civilian') || piece.getData('type').includes('Gem')) && !piece.position_set) {
                 piece.setInteractive() 
                 this.input.setDraggable(piece)
-            }
-            else if (piece.possibleMoves(false).length > 0) {
+            }  else if (piece.possibleMoves(false).length > 0) {
                 piece.setInteractive(); 
 
                 const OLD_SCALE = 1
@@ -477,7 +480,7 @@ export default class Game extends Phaser.Scene {
                         })
                         this.ghosts.push(ghost)
                     }
-
+                    
                     for (let i = 0; i < am.length; i += 1) {
                         const ghost = this.add.rectangle(25+am[i][2]*50, 25+am[i][1]*50, 50, 50, 0xCC0000).setAlpha(0.25)
                         ghost.setInteractive(); 
@@ -637,24 +640,45 @@ export default class Game extends Phaser.Scene {
                 row = row.concat([0])
             }
             pickupZone.push(row)
-         }        
+        }       
 
-        for (let i = 0; i < 6; i += 1) {
-            let whiteCivilian = this.createPiece(0, 16+i, true, Civilian)
-            pickupZone[0][i] = whiteCivilian 
-            this.whiteCivilians.add(whiteCivilian)
-            this.whitePieces.add(whiteCivilian)
+        const pieceTypes = [
+            Gem, 
+            Trap,
+            Soldier,
+            King,
+            Queen,
+            Sniper,
+            Spy,
+            Civilian
+        ];
+         
+        for(let i = 1; i < pieceTypes.length; i++) {
+            const whitePiece = this.createPiece(0, 16+i, true, pieceTypes[i]);  
+            console.log(whitePiece);
+            pickupZone[0][i] = whitePiece;
+            const blackPiece = this.createPiece(15, 16+i, false, pieceTypes[i]);
+            pickupZone[1][i] = blackPiece;
+        }  
+
+        // for (let i = 0; i < 6; i += 1) {
+        //     let whiteCivilian = this.createPiece(0, 16+i, true, Civilian)
+        //     pickupZone[0][i] = whiteCivilian 
+        //     this.whiteCivilians.add(whiteCivilian)
+        //     this.whitePieces.add(whiteCivilian)
     
-            let blackCivilian = this.createPiece(15, 16+i, false, Civilian)
-            pickupZone[1][i] = blackCivilian
-            this.blackCivilians.add(blackCivilian)
-            this.blackPieces.add(blackCivilian)
-        }
+        //     let blackCivilian = this.createPiece(15, 16+i, false, Civilian)
+        //     pickupZone[1][i] = blackCivilian
+        //     this.blackCivilians.add(blackCivilian)
+        //     this.blackPieces.add(blackCivilian)
+        // }
+
+        // Add Gems
         pickupZone[0][6] = this.createPiece(0, 16+6, true, Gem);
         pickupZone[1][6] = this.createPiece(15, 16+6, false, Gem);
     
-        this.gems.add(pickupZone[0][6]);
-        this.gems.add(pickupZone[1][6]);
+        // this.gems.add(pickupZone[0][6]);
+        // this.gems.add(pickupZone[1][6]);
         
         return pickupZone
     }
