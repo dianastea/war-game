@@ -59,7 +59,7 @@ export default class Piece extends Phaser.GameObjects.Sprite {
             for (let j = c - this.attack_radius; j <= c + this.attack_radius; j++) {
                 if (this.inBounds(i, j)) {
                     let victim = this.scene.board[i][j]
-                    if (victim != 0 && victim.getData('color') != this.getData('color') && !this.getData('type').includes('Spy')) {
+                    if (victim != 0 && victim.getData('color') != this.getData('color') && !this.getData('type').includes('Spy') && this.getData('type').includes('Trap')) {
                         console.log('victim', victim, i, j)
                         moves.push(['attack', i, j, this.scene.board[i][j]])
                     }
@@ -101,11 +101,19 @@ export default class Piece extends Phaser.GameObjects.Sprite {
             if (!this.inBounds(s[0] + dir[0], s[1] + dir[1])) 
                 return
             boardSquare = this.scene.board[s[0] + dir[0]][s[1] + dir[1]]
-            if(boardSquare != 0) {
+
+            if(boardSquare != 0 && boardSquare.data.list) {
+            }
+
+            if(boardSquare != 0 && !boardSquare.data.list.type.includes("Trap")) {
                 return 
             }
-            if ((boardSquare == 0 || s == visited[0]) && this.scene.terrain[s[0] + dir[0]][s[1] + dir[1]].includes("ground")) {
-                
+
+            if (boardSquare.data && boardSquare.data.list.type.includes("Trap") && this.scene.terrain[s[0] + dir[0]][s[1] + dir[1]].includes("ground")) {
+                visited.push(s)
+                this.moves.push([s[0] + dir[0], s[1] + dir[1], 'normal'])
+                stack.push([s[0] + dir[0], s[1] + dir[1], 'normal']) 
+            } else if ((boardSquare == 0 || s == visited[0]) && this.scene.terrain[s[0] + dir[0]][s[1] + dir[1]].includes("ground")) {
                 visited.push(s)
                 this.moves.push([s[0] + dir[0], s[1] + dir[1], 'normal'])
                 stack.push([s[0] + dir[0], s[1] + dir[1], 'normal']) 
@@ -139,7 +147,7 @@ export default class Piece extends Phaser.GameObjects.Sprite {
      */
     doApm() {
         this.moves = [];
-        this.temp_moves.forEach((move) => {
+        this.temp_moves && this.temp_moves.forEach((move) => {
             this.getApm(move, this.move_radius)
         })
         // if (this.getData('type').includes("King")) {

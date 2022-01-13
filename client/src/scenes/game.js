@@ -9,6 +9,7 @@ import HealthBar from '../helpers/healthbar'
 import PotionBar from '../helpers/potionbar'
 import Board from '../helpers/board';
 import Gem from '../helpers/pieces/gem';
+import Trap from '../helpers/pieces/trap';
 import { infoTextConfig, BASE_ASSET_PATH, SPRITE_WIDTH, SPRITE_HEIGHT } from "../config";
 
 // need to add color functionality 
@@ -46,6 +47,8 @@ export default class Game extends Phaser.Scene {
     preload() {
         this.loadSprite('whiteGem', 'gem-sheet.png', 32, 32);
         this.loadSprite('blackGem', 'gem-sheet.png', 32, 32);
+        this.loadSprite('whiteTrap', 'fire-trap.png', 32, 41);
+        this.loadSprite('blackTrap', 'bear-trap.png', 32, 32);
         this.loadSprite('whiteSoldier', 'soldier-white-sheet.png');
         this.loadSprite('blackSoldier', 'soldier-black-sheet.png');
         this.loadSprite('whiteKing', 'king-white-sheet.png');
@@ -143,7 +146,8 @@ export default class Game extends Phaser.Scene {
         this.whitePieces = this.add.group();
         this.blackPieces = this.add.group();
         this.gems = this.add.group();
-
+        this.whiteTraps = this.add.group();
+        this.blackTraps = this.add.group();
 
         // CHANGES: added pickupZone for civilians / gem and in the future, for cards 
         this.cannons = this.add.group(); 
@@ -168,6 +172,8 @@ export default class Game extends Phaser.Scene {
         this.createIdleAnimation('idleBlackKing', 'blackKing', 0, 3);
         this.createIdleAnimation('idleWhiteCannon', 'whiteCannon',0, 3);
         this.createIdleAnimation('idleGem', 'whiteGem', 0, 6);
+        this.createIdleAnimation('idleWhiteTrap', 'whiteTrap', 0, 13);
+        this.createIdleAnimation('idleBlackTrap', 'blackTrap', 0, 3);
 
         // Start Animations
         this.whiteSoldiers.playAnimation('idleWhiteSoldier');
@@ -176,6 +182,8 @@ export default class Game extends Phaser.Scene {
         this.blackKings.playAnimation('idleBlackKing');
         this.cannons.playAnimation('idleWhiteCannon');
         this.gems.playAnimation('idleGem');
+        this.whiteTraps.playAnimation('idleWhiteTrap');
+        this.blackTraps.playAnimation('idleBlackTrap');
         
         let self = this; 
         
@@ -339,8 +347,17 @@ export default class Game extends Phaser.Scene {
         //console.log(move, piece)
         
         let [n_row, n_col, type] = move.slice(0,3)
-        
         let [row, col] = [piece.getData('row'), piece.getData('col')]
+
+        // Check if piece is going to move on top of a trap 
+        if(this.board[n_row][n_col] instanceof Trap) {
+            this.attackPiece(['attack', row, col, this.board[row][col]], this.board[row][col]);
+
+            // Destroy trap
+            this.board[n_row][n_col].destroyed();
+            this.socket.emit('destroy', this.color, n_row, n_col);
+        }
+
         this.board[row][col] = 0
         this.board[n_row][n_col] = piece
         piece.updatePosition(n_row, n_col)
@@ -575,11 +592,13 @@ export default class Game extends Phaser.Scene {
     }
     this.board[13][0] = this.createPiece(13, 0, false, Queen);
     this.board[13][1] = this.createPiece(13, 1, false, Sniper);
-    this.board[10][1] = this.createPiece(10, 1, false, Gem);
     
     this.board[8][2] = this.createPiece(8, 2, true, Cannon);
 
+    this.board[12][3] = this.createPiece(12,3,true,Trap);
+
     this.cannons.add(this.board[8][2]); 
+    this.whiteTraps.add(this.board[12][3]);
 
     let p1 = this.color ? ' (You)' : ''
     let p2 = this.color ? '' : ' (You)'
