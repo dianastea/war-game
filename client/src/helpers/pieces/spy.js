@@ -5,7 +5,8 @@ export default class Spy extends Piece {
     
     constructor(scene, x, y, color, key, healthbar) {
         super(scene, x, y, key, color + 'Spy', color, healthbar); 
-        this.moves = [] 
+        this.temp_moves = [[1, 0], [-1, 0], [0, 1], [0, -1]] 
+        this.move_radius = 2
         this.setScale(1, 1);
         this.attack_radius = 1 
         if (this.scene.color != (color != 'black')) {

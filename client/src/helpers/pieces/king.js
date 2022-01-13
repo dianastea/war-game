@@ -6,7 +6,8 @@ export default class King extends Piece {
         super(scene, x, y, key, color + 'King', color, healthbar); 
         this.setScale(1, 1);
         this.strength = 5
-        this.moves = [] 
+        this.move_radius = 3
+        this.temp_moves = [[1, 0], [-1, 0], [0, 1], [0, -1], [-1, 1], [1, 1], [1, -1], [-1, -1]] 
 
     }
     

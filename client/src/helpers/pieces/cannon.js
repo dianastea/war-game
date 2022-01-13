@@ -5,7 +5,7 @@ export default class Cannon extends Piece {
     
     constructor(scene, x, y, color, key, healthbar) {
         super(scene, x, y, key, color + 'Cannon', color, healthbar); 
-        this.moves = [] 
+        this.temp_moves = [] 
         this.setScale(1, 1);
         this.attack_radius = 1 
         this.turns_to_shoot = 1

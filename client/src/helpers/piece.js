@@ -92,7 +92,6 @@ export default class Piece extends Phaser.GameObjects.Sprite {
         let stack = [];
         stack.push([row, col, 'normal']);
 
-        
         while (stack.length != 0) {
             if (visited.length > steps) {
                 return
@@ -140,46 +139,49 @@ export default class Piece extends Phaser.GameObjects.Sprite {
      */
     doApm() {
         this.moves = [];
-        if (this.getData('type').includes("King")) {
-            //[possibleX, possibleY], max_travel_distance
-            this.getApm([1,0], 3);
-            this.getApm([-1,0], 3);
-            this.getApm([0,1], 3);
-            this.getApm([0,-1], 3);
-            this.getApm([-1,1], 3);
-            this.getApm([1,1], 3);
-            this.getApm([1,-1], 3);
-            this.getApm([-1,-1], 3);
-            // console.log(row, col)
-            // console.log(this.moves);
-        } else if (this.getData('type').includes("Soldier")) {
-            //[possibleX, possibleY], max_travel_distance
-            this.getApm([1,0], 1);
-            this.getApm([-1,0], 1);
-            this.getApm([0,1], 1);
-            this.getApm([0,-1], 1);
-            // console.log(row, col)
-            // console.log(this.moves);
-        } else if (this.getData('type').includes("Queen")) {
-            //[possibleX, possibleY], max_travel_distance
-            this.getApm([1,0], 1);
-            this.getApm([-1,0], 1);
-            this.getApm([0,1], 1);
-            this.getApm([0,-1], 1);
-            // console.log(row, col)
-            // console.log(this.moves);    
-        } else if (this.getData('type').includes("Sniper")) {
-            [1, -1].forEach((x) => {
-                [1, -1].forEach((y) => {
-                    this.getApm([x, y], 1)
-                })
-            })
-        } else if (this.getData('type').includes("Spy")) {
-            this.getApm([1,0], 2);
-            this.getApm([-1,0], 2);
-            this.getApm([0,1], 2);
-            this.getApm([0,-1], 2);
-        }
+        this.temp_moves.forEach((move) => {
+            this.getApm(move, this.move_radius)
+        })
+        // if (this.getData('type').includes("King")) {
+        //     //[possibleX, possibleY], max_travel_distance
+        //     this.getApm([1,0], 3);
+        //     this.getApm([-1,0], 3);
+        //     this.getApm([0,1], 3);
+        //     this.getApm([0,-1], 3);
+        //     this.getApm([-1,1], 3);
+        //     this.getApm([1,1], 3);
+        //     this.getApm([1,-1], 3);
+        //     this.getApm([-1,-1], 3);
+        //     // console.log(row, col)
+        //     // console.log(this.moves);
+        // } else if (this.getData('type').includes("Soldier")) {
+        //     //[possibleX, possibleY], max_travel_distance
+        //     this.getApm([1,0], 1);
+        //     this.getApm([-1,0], 1);
+        //     this.getApm([0,1], 1);
+        //     this.getApm([0,-1], 1);
+        //     // console.log(row, col)
+        //     // console.log(this.moves);
+        // } else if (this.getData('type').includes("Queen")) {
+        //     //[possibleX, possibleY], max_travel_distance
+        //     this.getApm([1,0], 1);
+        //     this.getApm([-1,0], 1);
+        //     this.getApm([0,1], 1);
+        //     this.getApm([0,-1], 1);
+        //     // console.log(row, col)
+        //     // console.log(this.moves);    
+        // } else if (this.getData('type').includes("Sniper")) {
+        //     [1, -1].forEach((x) => {
+        //         [1, -1].forEach((y) => {
+        //             this.getApm([x, y], 1)
+        //         })
+        //     })
+        // } else if (this.getData('type').includes("Spy")) {
+        //     this.getApm([1,0], 2);
+        //     this.getApm([-1,0], 2);
+        //     this.getApm([0,1], 2);
+        //     this.getApm([0,-1], 2);
+        // }
 
         return this.moves
     }

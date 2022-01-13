@@ -4,7 +4,7 @@ export default class Civilian extends Piece {
     
     constructor(scene, x, y, color, key, healthbar) {
         super(scene, x, y, key, color + 'Civilian', color, healthbar); 
-        this.moves = [] 
+        this.temp_moves = [] 
         this.attack_radius = 0 
         this.strength = 0 
 
