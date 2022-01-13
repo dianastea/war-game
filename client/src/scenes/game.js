@@ -353,11 +353,9 @@ export default class Game extends Phaser.Scene {
         let [n_row, n_col, type] = move.slice(0,3)
         let [row, col] = [piece.getData('row'), piece.getData('col')]
 
-        console.log("!!!!!!!!!!!!!!!!!!!!!!! MOVE !!!!!!!!!!!!!!!!!!!!!!!!");
-
         // Check if piece is going to move on top of a trap 
         if(this.board[n_row][n_col] instanceof Trap) {
-            console.log("Hello World!");
+            // Apply damage from trap to piece moving on top of the trap  
             this.attackPiece(['attack', row, col, this.board[row][col]], this.board[row][col]);
 
             // Destroy trap
